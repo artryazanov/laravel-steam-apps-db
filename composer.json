@@ -2,7 +2,7 @@
   "name": "artryazanov/laravel-steam-apps-db",
   "description": "Laravel package for Steam apps database functionality",
   "type": "library",
-  "license": "MIT",
+  "license": "Unlicense",
   "autoload": {
     "psr-4": {
       "Artryazanov\\LaravelSteamAppsDb\\": "src/",
