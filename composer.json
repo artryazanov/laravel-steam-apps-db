@@ -1,0 +1,34 @@
+{
+  "name": "artryazanov/laravel-steam-apps-db",
+  "description": "Laravel package for Steam apps database functionality",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Artryazanov\\LaravelSteamAppsDb\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Artryazanov\\LaravelSteamAppsDb\\Tests\\": "tests/",
+      "Artryazanov\\LaravelSteamAppsDb\\Database\\Factories\\": "database/factories/"
+    }
+  },
+  "require": {
+    "php": "^8.0",
+    "illuminate/support": "^10.0|^11.0|^12.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^8.0|^9.0",
+    "phpunit/phpunit": "^10.0"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Artryazanov\\LaravelSteamAppsDb\\LaravelSteamAppsDbServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
