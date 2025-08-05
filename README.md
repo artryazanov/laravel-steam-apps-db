@@ -90,22 +90,29 @@ This will fetch detailed information for the specified Steam app(s) and store it
 This command fetches the latest news for Steam apps and stores them in the database.
 
 ```bash
-php artisan steam:fetch-app-news [count]
+php artisan steam:fetch-app-news [count] [--appid=<appid>]
 ```
 
 Parameters:
 - `count` (optional): Number of apps to process (default: 10)
+- `--appid` (optional): Steam application ID to fetch news for a specific app
 
 The command prioritizes:
 1. Apps that have never had news fetched
 2. Apps with news older than a month
 
-Example:
+If the `--appid` option is provided, the command will only fetch news for the specified app, ignoring the count parameter and prioritization logic.
+
+Examples:
 ```bash
+# Fetch news for 20 Steam apps based on priority
 php artisan steam:fetch-app-news 20
+
+# Fetch news for a specific Steam app with ID 570 (DOTA 2)
+php artisan steam:fetch-app-news --appid=570
 ```
 
-This will fetch news for 20 Steam apps and store it in the `steam_app_news` table.
+This will fetch the latest news for the specified Steam app(s) and store it in the `steam_app_news` table.
 
 ### Models
 
