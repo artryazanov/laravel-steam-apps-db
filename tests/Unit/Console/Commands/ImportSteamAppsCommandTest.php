@@ -11,12 +11,6 @@ class ImportSteamAppsCommandTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        // No specific config values needed for this test
-    }
-
     public function testCommandImportsSteamAppsSuccessfully(): void
     {
         // Mock HTTP response from Steam API
