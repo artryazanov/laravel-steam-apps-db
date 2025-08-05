@@ -2,8 +2,6 @@
 <phpunit
     bootstrap="vendor/autoload.php"
     colors="true"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd"
 >
     <testsuites>
         <testsuite name="LaravelSteamAppsDb Test Suite">
