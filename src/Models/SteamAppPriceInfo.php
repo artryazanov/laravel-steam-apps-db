@@ -20,7 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $final_formatted Formatted final price string
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read SteamAppDetail $steamAppDetail
+ * @property-read SteamApp $steamApp
  */
 class SteamAppPriceInfo extends Model
 {

@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $recommended Recommended requirements
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read SteamAppDetail $steamAppDetail
+ * @property-read SteamApp $steamApp
  */
 class SteamAppRequirement extends Model
 {
