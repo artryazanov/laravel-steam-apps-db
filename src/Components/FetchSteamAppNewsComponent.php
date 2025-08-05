@@ -25,22 +25,40 @@ class FetchSteamAppNewsComponent
      *
      * @param Command $command The command instance for output
      * @param int $limit Number of apps to process
+     * @param int|null $appid Specific Steam app ID to fetch news for
      * @return void
      */
-    public function fetchSteamAppNews(Command $command, int $limit): void
+    public function fetchSteamAppNews(Command $command, int $limit, ?int $appid = null): void
     {
-        $command->info("Starting to fetch Steam app news (count: {$limit})...");
+        if ($appid) {
+            $command->info("Starting to fetch news for specific Steam app (appid: {$appid})...");
 
-        // Get SteamApp records to process based on priority
-        $appsToProcess = $this->getSteamAppsToProcess($limit);
-        $totalApps = count($appsToProcess);
+            // Get the specific app by appid
+            $app = SteamApp::where('appid', $appid)->first();
 
-        if ($totalApps === 0) {
-            $command->info('No Steam apps to process.');
-            return;
+            if (!$app) {
+                $command->error("Steam app with appid {$appid} not found in the database.");
+                return;
+            }
+
+            $appsToProcess = collect([$app]);
+            $totalApps = 1;
+
+            $command->info("Found Steam app: {$app->name} (appid: {$app->appid})");
+        } else {
+            $command->info("Starting to fetch Steam app news (count: {$limit})...");
+
+            // Get SteamApp records to process based on priority
+            $appsToProcess = $this->getSteamAppsToProcess($limit);
+            $totalApps = count($appsToProcess);
+
+            if ($totalApps === 0) {
+                $command->info('No Steam apps to process.');
+                return;
+            }
+
+            $command->info("Found {$totalApps} Steam apps to process.");
         }
-
-        $command->info("Found {$totalApps} Steam apps to process.");
 
         $processed = 0;
         $success = 0;

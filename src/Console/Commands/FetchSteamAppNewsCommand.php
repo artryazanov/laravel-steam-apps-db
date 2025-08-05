@@ -12,7 +12,7 @@ class FetchSteamAppNewsCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'steam:fetch-app-news {count=10 : Number of apps to process}';
+    protected $signature = 'steam:fetch-app-news {count=10 : Number of apps to process} {--appid= : Steam application ID to fetch news for a specific app}';
 
     /**
      * The console command description.
@@ -33,10 +33,12 @@ class FetchSteamAppNewsCommand extends Command
         }
 
         $limit = (int) $argCount;
+        $appid = $this->option('appid');
+
         $this->info('Starting fetch of Steam app news...');
 
         $fetchComponent = new FetchSteamAppNewsComponent();
-        $fetchComponent->fetchSteamAppNews($this, $limit);
+        $fetchComponent->fetchSteamAppNews($this, $limit, $appid);
 
         $this->info('Fetch of Steam app news completed!');
     }

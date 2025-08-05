@@ -180,4 +180,64 @@ class FetchSteamAppNewsCommandTest extends TestCase
         $this->assertNotNull($highPriorityApp->last_news_update);
     }
 
+    /**
+     * Test that the command fetches news for a specific app when appid option is provided.
+     */
+    public function testFetchNewsForSpecificApp(): void
+    {
+        // Create a Steam app with a specific appid
+        $specificApp = SteamApp::factory()->create([
+            'appid' => 440, // Using Team Fortress 2 appid
+            'name' => 'Team Fortress 2',
+        ]);
+
+        // Mock the HTTP response for the specific app
+        Http::fake([
+            'api.steampowered.com/ISteamNews/GetNewsForApp/v0002/*' => Http::response([
+                'appnews' => [
+                    'appid' => 440,
+                    'newsitems' => [
+                        [
+                            'gid' => '9876543210',
+                            'title' => 'Team Fortress 2 Update',
+                            'url' => 'https://steamstore-a.akamaihd.net/news/externalpost/tf2_blog/9876543210',
+                            'is_external_url' => true,
+                            'author' => 'TF2 Team',
+                            'contents' => 'Update content',
+                            'feedlabel' => 'TF2 Blog',
+                            'date' => 1753000000,
+                            'feedname' => 'tf2_blog',
+                            'feed_type' => 1,
+                            'appid' => 440
+                        ]
+                    ]
+                ]
+            ]),
+        ]);
+
+        // Run the command with the appid option
+        $this->artisan('steam:fetch-app-news 1 --appid=440')
+            ->expectsOutput('Starting to fetch news for specific Steam app (appid: 440)...')
+            ->expectsOutput('Found Steam app: Team Fortress 2 (appid: 440)')
+            ->assertExitCode(0);
+
+        // Assert that the news item was stored for the specific app
+        $this->assertDatabaseHas('steam_app_news', [
+            'steam_app_id' => $specificApp->id,
+            'gid' => '9876543210',
+            'title' => 'Team Fortress 2 Update',
+            'url' => 'https://steamstore-a.akamaihd.net/news/externalpost/tf2_blog/9876543210',
+            'is_external_url' => 1,
+            'author' => 'TF2 Team',
+            'contents' => 'Update content',
+            'feedlabel' => 'TF2 Blog',
+            'date' => 1753000000,
+            'feedname' => 'tf2_blog',
+            'feed_type' => 1,
+        ]);
+
+        // Assert that the last_news_update field was updated
+        $specificApp->refresh();
+        $this->assertNotNull($specificApp->last_news_update);
+    }
 }
