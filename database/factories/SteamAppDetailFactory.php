@@ -51,20 +51,4 @@ class SteamAppDetailFactory extends Factory
             'support_email' => $this->faker->email,
         ];
     }
-
-    /**
-     * Indicate that the steam app detail is for a specific steam app.
-     *
-     * @param SteamApp $steamApp
-     * @return $this
-     */
-    public function forSteamApp(SteamApp $steamApp): static
-    {
-        return $this->state(function (array $attributes) use ($steamApp) {
-            return [
-                'steam_app_id' => $steamApp->id,
-                'name' => $steamApp->name,
-            ];
-        });
-    }
 }
