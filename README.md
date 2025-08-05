@@ -185,7 +185,7 @@ The package creates the following tables:
 The package includes tests for all its functionality. To run the tests:
 
 ```bash
-./vendor/bin/phpunit
+vendor/bin/phpunit
 ```
 
 ## License
