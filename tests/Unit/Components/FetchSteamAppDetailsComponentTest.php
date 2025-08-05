@@ -7,12 +7,35 @@ use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppMovie;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppScreenshot;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
+use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Mockery;
 use ReflectionMethod;
 
 class FetchSteamAppDetailsComponentTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * Mock command for testing
+     */
+    private $mockCommand;
+
+    /**
+     * Set up the test environment.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Create a mock command
+        $this->mockCommand = Mockery::mock(Command::class);
+        $this->mockCommand->shouldReceive('info')->andReturnSelf();
+        $this->mockCommand->shouldReceive('line')->andReturnSelf();
+        $this->mockCommand->shouldReceive('warn')->andReturnSelf();
+        $this->mockCommand->shouldReceive('error')->andReturnSelf();
+    }
 
     /**
      * Test that the storeScreenshots method correctly handles screenshots.
@@ -299,6 +322,90 @@ class FetchSteamAppDetailsComponentTest extends TestCase
             'mp4_480' => 'http://example.com/mp4_480_4.mp4',
             'mp4_max' => 'http://example.com/mp4_max_4.mp4',
             'highlight' => 1,
+        ]);
+    }
+
+    /**
+     * Test that the fetchSteamAppDetails method correctly fetches details for a specific app by appid.
+     */
+    public function testFetchSteamAppDetailsForSpecificApp(): void
+    {
+        // Create multiple Steam apps
+        $targetApp = SteamApp::factory()->create([
+            'appid' => 123456,
+            'name' => 'Target App',
+        ]);
+
+        $otherApp = SteamApp::factory()->create([
+            'appid' => 654321,
+            'name' => 'Other App',
+        ]);
+
+        // Mock the HTTP response for the target app
+        Http::fake([
+            'store.steampowered.com/api/appdetails?appids=123456&cc=us&l=en' => Http::response([
+                '123456' => [
+                    'success' => true,
+                    'data' => [
+                        'type' => 'game',
+                        'name' => 'Target App',
+                        'steam_appid' => 123456,
+                        'required_age' => 0,
+                        'is_free' => false,
+                        'detailed_description' => 'Test description',
+                        'about_the_game' => 'About the game',
+                        'short_description' => 'Short description',
+                        'supported_languages' => 'English',
+                        'header_image' => 'http://example.com/header.jpg',
+                        'platforms' => [
+                            'windows' => true,
+                            'mac' => false,
+                            'linux' => false,
+                        ],
+                        'release_date' => [
+                            'coming_soon' => false,
+                            'date' => '2023-01-01',
+                        ],
+                        'support_info' => [
+                            'url' => 'http://example.com/support',
+                            'email' => 'support@example.com',
+                        ],
+                    ],
+                ],
+            ]),
+            // Any other request will return a failure response
+            '*' => Http::response([
+                'success' => false,
+            ]),
+        ]);
+
+        // Create an instance of the component
+        $component = new FetchSteamAppDetailsComponent();
+
+        // Call the fetchSteamAppDetails method with a specific appid
+        $component->fetchSteamAppDetails($this->mockCommand, 10, '123456');
+
+        // Assert that the details were stored for the target app
+        $this->assertDatabaseHas('steam_app_details', [
+            'steam_app_id' => $targetApp->id,
+            'name' => 'Target App',
+            'type' => 'game',
+            'is_free' => 0,
+            'required_age' => 0,
+            'detailed_description' => 'Test description',
+            'about_the_game' => 'About the game',
+            'short_description' => 'Short description',
+            'supported_languages' => 'English',
+            'header_image' => 'http://example.com/header.jpg',
+        ]);
+
+        // Assert that the last_details_update field was updated for the target app
+        $targetApp->refresh();
+        $this->assertNotNull($targetApp->last_details_update);
+
+        // Assert that no details were stored for the other app
+        $this->assertDatabaseMissing('steam_app_details', [
+            'steam_app_id' => $otherApp->id,
         ]);
     }
 }

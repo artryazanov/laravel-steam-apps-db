@@ -296,4 +296,82 @@ class FetchSteamAppDetailsCommandTest extends TestCase
         $this->assertTrue($lowPriorityApp->last_details_update->gt(Carbon::now()->subYears(2)));
     }
 
+    /**
+     * Test that the command fetches details for a specific app when appid is provided.
+     */
+    public function testFetchDetailsForSpecificApp(): void
+    {
+        // Create multiple Steam apps
+        $targetApp = SteamApp::factory()->create([
+            'appid' => 123456,
+            'name' => 'Target App',
+        ]);
+
+        $otherApp = SteamApp::factory()->create([
+            'appid' => 654321,
+            'name' => 'Other App',
+        ]);
+
+        // Mock the HTTP response for the target app
+        Http::fake([
+            'store.steampowered.com/api/appdetails?appids=123456&cc=us&l=en' => Http::response([
+                '123456' => [
+                    'success' => true,
+                    'data' => [
+                        'type' => 'game',
+                        'name' => 'Target App',
+                        'steam_appid' => 123456,
+                        'required_age' => 0,
+                        'is_free' => false,
+                        'detailed_description' => 'Test description',
+                        'about_the_game' => 'About the game',
+                        'short_description' => 'Short description',
+                        'supported_languages' => 'English',
+                        'header_image' => 'http://example.com/header.jpg',
+                        'platforms' => [
+                            'windows' => true,
+                            'mac' => false,
+                            'linux' => false,
+                        ],
+                        'release_date' => [
+                            'coming_soon' => false,
+                            'date' => '2023-01-01',
+                        ],
+                        'support_info' => [
+                            'url' => 'http://example.com/support',
+                            'email' => 'support@example.com',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Run the command with the specific appid
+        $this->artisan('steam:fetch-app-details --appid=123456')
+            ->expectsOutput('Starting to fetch Steam game details for specific appid: 123456...')
+            ->assertExitCode(0);
+
+        // Assert that the details were stored for the target app
+        $this->assertDatabaseHas('steam_app_details', [
+            'steam_app_id' => $targetApp->id,
+            'name' => 'Target App',
+            'type' => 'game',
+            'is_free' => 0,
+            'required_age' => 0,
+            'detailed_description' => 'Test description',
+            'about_the_game' => 'About the game',
+            'short_description' => 'Short description',
+            'supported_languages' => 'English',
+            'header_image' => 'http://example.com/header.jpg',
+        ]);
+
+        // Assert that the last_details_update field was updated for the target app
+        $targetApp->refresh();
+        $this->assertNotNull($targetApp->last_details_update);
+
+        // Assert that no details were stored for the other app
+        $this->assertDatabaseMissing('steam_app_details', [
+            'steam_app_id' => $otherApp->id,
+        ]);
+    }
 }

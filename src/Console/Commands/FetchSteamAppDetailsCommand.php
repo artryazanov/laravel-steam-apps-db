@@ -12,7 +12,7 @@ class FetchSteamAppDetailsCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'steam:fetch-app-details {count=10 : Number of apps to process}';
+    protected $signature = 'steam:fetch-app-details {count=10 : Number of apps to process} {--appid= : Steam application ID to fetch details for a specific app}';
 
     /**
      * The console command description.
@@ -33,10 +33,12 @@ class FetchSteamAppDetailsCommand extends Command
         }
 
         $limit = (int) $argCount;
+        $appid = $this->option('appid');
+
         $this->info('Starting fetch of Steam app details...');
 
         $fetchComponent = new FetchSteamAppDetailsComponent();
-        $fetchComponent->fetchSteamAppDetails($this, $limit);
+        $fetchComponent->fetchSteamAppDetails($this, $limit, $appid);
 
         $this->info('Fetch of Steam app details completed!');
     }

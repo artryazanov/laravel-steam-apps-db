@@ -61,22 +61,29 @@ This will fetch a list of all Steam applications and store them in the `steam_ap
 This command fetches detailed information about Steam games and stores it in the database.
 
 ```bash
-php artisan steam:fetch-app-details [count]
+php artisan steam:fetch-app-details [count] [--appid=<appid>]
 ```
 
 Parameters:
 - `count` (optional): Number of apps to process (default: 10)
+- `--appid` (optional): Steam application ID to fetch details for a specific app
 
 The command prioritizes:
 1. Apps that have never had details fetched
 2. Apps with details older than a year
 
-Example:
+If the `--appid` option is provided, the command will only fetch details for the specified app, ignoring the count parameter and prioritization logic.
+
+Examples:
 ```bash
+# Fetch details for 50 Steam apps based on priority
 php artisan steam:fetch-app-details 50
+
+# Fetch details for a specific Steam app with ID 570 (DOTA 2)
+php artisan steam:fetch-app-details --appid=570
 ```
 
-This will fetch detailed information for 50 Steam apps and store it in various tables.
+This will fetch detailed information for the specified Steam app(s) and store it in various tables.
 
 #### 3. Fetch Steam App News
 
