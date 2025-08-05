@@ -2,9 +2,9 @@
 
 namespace Artryazanov\LaravelSteamAppsDb;
 
-use Artryazanov\LaravelSteamAppsDb\Console\Commands\FetchSteamAppDetailsCommand;
-use Artryazanov\LaravelSteamAppsDb\Console\Commands\FetchSteamAppNewsCommand;
-use Artryazanov\LaravelSteamAppsDb\Console\Commands\ImportSteamAppsCommand;
+use Artryazanov\LaravelSteamAppsDb\Console\FetchSteamAppDetailsCommand;
+use Artryazanov\LaravelSteamAppsDb\Console\FetchSteamAppNewsCommand;
+use Artryazanov\LaravelSteamAppsDb\Console\ImportSteamAppsCommand;
 use Illuminate\Support\ServiceProvider;
 
 class LaravelSteamAppsDbServiceProvider extends ServiceProvider

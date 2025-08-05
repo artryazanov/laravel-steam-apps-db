@@ -404,7 +404,7 @@ class FetchSteamAppNewsComponentTest extends TestCase
 
         // Create an instance of the component and call the fetchSteamAppNews method
         $component = new FetchSteamAppNewsComponent();
-        $component->fetchSteamAppNews($this->mockCommand, 1);
+        $component->fetchSteamAppNews(1, null, $this->mockCommand);
 
         // Verify that the news was stored
         $this->assertDatabaseHas('steam_app_news', [

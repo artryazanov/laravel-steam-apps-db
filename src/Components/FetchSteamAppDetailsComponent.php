@@ -2,6 +2,7 @@
 
 namespace Artryazanov\LaravelSteamAppsDb\Components;
 
+use Artryazanov\LaravelSteamAppsDb\Console\NullCommand;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppCategory;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDetail;
@@ -31,13 +32,17 @@ class FetchSteamAppDetailsComponent
     /**
      * Fetch detailed information about Steam games and store it in the database.
      *
-     * @param Command $command The command instance for output
      * @param int $limit Number of apps to process
      * @param string|null $appid Optional Steam application ID to fetch details for a specific app
+     * @param Command|null $command The command instance for output
      * @return void
      */
-    public function fetchSteamAppDetails(Command $command, int $limit, ?string $appid = null): void
+    public function fetchSteamAppDetails(int $limit, ?string $appid = null, ?Command $command = null): void
     {
+        if (empty($command)) {
+            $command = new NullCommand();
+        }
+
         if ($appid) {
             $command->info("Starting to fetch Steam game details for specific appid: {$appid}...");
 

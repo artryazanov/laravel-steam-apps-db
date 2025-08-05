@@ -1,6 +1,6 @@
 <?php
 
-namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Console\Commands;
+namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Console;
 
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDetail;

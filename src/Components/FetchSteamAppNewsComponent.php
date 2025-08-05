@@ -2,6 +2,7 @@
 
 namespace Artryazanov\LaravelSteamAppsDb\Components;
 
+use Artryazanov\LaravelSteamAppsDb\Console\NullCommand;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppNews;
 use Carbon\Carbon;
@@ -21,15 +22,19 @@ class FetchSteamAppNewsComponent
     private const STEAM_API_URL = 'https://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/';
 
     /**
-     * Fetch latest news for Steam apps and store them in the database.
+     * Fetch the latest news for Steam apps and store them in the database.
      *
-     * @param Command $command The command instance for output
      * @param int $limit Number of apps to process
      * @param int|null $appid Specific Steam app ID to fetch news for
+     * @param Command|null $command The command instance for output
      * @return void
      */
-    public function fetchSteamAppNews(Command $command, int $limit, ?int $appid = null): void
+    public function fetchSteamAppNews(int $limit, ?int $appid = null, ?Command $command = null): void
     {
+        if (empty($command)) {
+            $command = new NullCommand();
+        }
+
         if ($appid) {
             $command->info("Starting to fetch news for specific Steam app (appid: {$appid})...");
 

@@ -1,13 +1,13 @@
 <?php
 
-namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Console\Commands;
+namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Console;
 
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppNews;
+use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
 
 class FetchSteamAppNewsCommandTest extends TestCase
 {

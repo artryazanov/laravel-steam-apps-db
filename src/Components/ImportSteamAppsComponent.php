@@ -2,6 +2,7 @@
 
 namespace Artryazanov\LaravelSteamAppsDb\Components;
 
+use Artryazanov\LaravelSteamAppsDb\Console\NullCommand;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Exception;
 use Illuminate\Console\Command;
@@ -20,11 +21,15 @@ class ImportSteamAppsComponent
     /**
      * Import Steam apps from the Steam API and store them in the database.
      *
-     * @param Command $command The command instance for output
+     * @param Command|null $command The command instance for output
      * @return void
      */
-    public function importSteamApps(Command $command): void
+    public function importSteamApps(?Command $command = null): void
     {
+        if (empty($command)) {
+            $command = new NullCommand();
+        }
+
         try {
             $command->info('Fetching data from Steam API...');
 

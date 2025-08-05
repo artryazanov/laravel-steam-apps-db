@@ -383,7 +383,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
         $component = new FetchSteamAppDetailsComponent();
 
         // Call the fetchSteamAppDetails method with a specific appid
-        $component->fetchSteamAppDetails($this->mockCommand, 10, '123456');
+        $component->fetchSteamAppDetails(10, '123456', $this->mockCommand);
 
         // Assert that the details were stored for the target app
         $this->assertDatabaseHas('steam_app_details', [

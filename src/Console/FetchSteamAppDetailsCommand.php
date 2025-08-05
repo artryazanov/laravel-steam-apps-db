@@ -1,6 +1,6 @@
 <?php
 
-namespace Artryazanov\LaravelSteamAppsDb\Console\Commands;
+namespace Artryazanov\LaravelSteamAppsDb\Console;
 
 use Artryazanov\LaravelSteamAppsDb\Components\FetchSteamAppDetailsComponent;
 use Illuminate\Console\Command;
@@ -38,7 +38,7 @@ class FetchSteamAppDetailsCommand extends Command
         $this->info('Starting fetch of Steam app details...');
 
         $fetchComponent = new FetchSteamAppDetailsComponent();
-        $fetchComponent->fetchSteamAppDetails($this, $limit, $appid);
+        $fetchComponent->fetchSteamAppDetails($limit, $appid, $this);
 
         $this->info('Fetch of Steam app details completed!');
     }

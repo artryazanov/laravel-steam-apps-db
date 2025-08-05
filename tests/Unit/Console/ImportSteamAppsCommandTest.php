@@ -1,11 +1,11 @@
 <?php
 
-namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Console\Commands;
+namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Console;
 
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
+use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
 
 class ImportSteamAppsCommandTest extends TestCase
 {

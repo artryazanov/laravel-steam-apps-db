@@ -1,6 +1,6 @@
 <?php
 
-namespace Artryazanov\LaravelSteamAppsDb\Console\Commands;
+namespace Artryazanov\LaravelSteamAppsDb\Console;
 
 use Artryazanov\LaravelSteamAppsDb\Components\ImportSteamAppsComponent;
 use Illuminate\Console\Command;
