@@ -5,13 +5,13 @@
   "license": "MIT",
   "autoload": {
     "psr-4": {
-      "Artryazanov\\LaravelSteamAppsDb\\": "src/"
+      "Artryazanov\\LaravelSteamAppsDb\\": "src/",
+      "Artryazanov\\LaravelSteamAppsDb\\Database\\Factories\\": "database/factories/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Artryazanov\\LaravelSteamAppsDb\\Tests\\": "tests/",
-      "Artryazanov\\LaravelSteamAppsDb\\Database\\Factories\\": "database/factories/"
+      "Artryazanov\\LaravelSteamAppsDb\\Tests\\": "tests/"
     }
   },
   "require": {
