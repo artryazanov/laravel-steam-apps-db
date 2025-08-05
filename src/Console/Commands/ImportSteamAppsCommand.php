@@ -2,7 +2,7 @@
 
 namespace Artryazanov\LaravelSteamAppsDb\Console\Commands;
 
-use Artryazanov\LaravelSteamAppsDb\Components\Steam\ImportSteamAppsComponent;
+use Artryazanov\LaravelSteamAppsDb\Components\ImportSteamAppsComponent;
 use Illuminate\Console\Command;
 
 class ImportSteamAppsCommand extends Command
