@@ -2,7 +2,6 @@
 
 namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Console\Commands;
 
-use Artryazanov\LaravelSteamAppsDb\Console\Commands\FetchSteamAppNewsCommand;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppNews;
 use Carbon\Carbon;
