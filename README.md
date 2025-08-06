@@ -196,9 +196,15 @@ The package creates the following tables:
 
 ## Testing
 
-The package includes tests for all its functionality. To run the tests:
+The package includes tests for all its functionality. To run the tests, you can use either of the following methods:
 
 ```bash
+# Using Composer script
+composer test
+```
+
+```bash
+# Using PHPUnit directly
 vendor/bin/phpunit
 ```
 

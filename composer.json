@@ -1,34 +1,37 @@
 {
-  "name": "artryazanov/laravel-steam-apps-db",
-  "description": "Laravel package for Steam apps database functionality",
-  "type": "library",
-  "license": "Unlicense",
-  "autoload": {
-    "psr-4": {
-      "Artryazanov\\LaravelSteamAppsDb\\": "src/",
-      "Artryazanov\\LaravelSteamAppsDb\\Database\\Factories\\": "database/factories/"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Artryazanov\\LaravelSteamAppsDb\\Tests\\": "tests/"
-    }
-  },
-  "require": {
-    "php": "^8.0",
-    "illuminate/support": "^10.0|^11.0|^12.0"
-  },
-  "require-dev": {
-    "orchestra/testbench": "^8.0|^9.0",
-    "phpunit/phpunit": "^10.0"
-  },
-  "extra": {
-    "laravel": {
-      "providers": [
-        "Artryazanov\\LaravelSteamAppsDb\\LaravelSteamAppsDbServiceProvider"
-      ]
-    }
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
+    "name": "artryazanov/laravel-steam-apps-db",
+    "description": "Laravel package for Steam apps database functionality",
+    "type": "library",
+    "license": "Unlicense",
+    "autoload": {
+        "psr-4": {
+            "Artryazanov\\LaravelSteamAppsDb\\": "src/",
+            "Artryazanov\\LaravelSteamAppsDb\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+          "Artryazanov\\LaravelSteamAppsDb\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit"
+    },
+    "require": {
+        "php": "^8.0",
+        "illuminate/support": "^10.0|^11.0|^12.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0",
+        "phpunit/phpunit": "^10.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Artryazanov\\LaravelSteamAppsDb\\LaravelSteamAppsDbServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
