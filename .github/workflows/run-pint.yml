@@ -1,4 +1,4 @@
-name: Run Pint
+name: Pint
 
 on:
   push:
