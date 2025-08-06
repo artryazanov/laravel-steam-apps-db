@@ -84,8 +84,6 @@ class SteamAppDetail extends Model
 
     /**
      * Create a new factory instance for the model.
-     *
-     * @return Factory
      */
     protected static function newFactory(): Factory
     {
@@ -94,8 +92,6 @@ class SteamAppDetail extends Model
 
     /**
      * Get the Steam app that this detail belongs to.
-     *
-     * @return BelongsTo
      */
     public function steamApp(): BelongsTo
     {

@@ -46,8 +46,6 @@ class SteamAppPriceInfo extends Model
 
     /**
      * Get the Steam app that this price info belongs to.
-     *
-     * @return BelongsTo
      */
     public function steamApp(): BelongsTo
     {

@@ -26,8 +26,6 @@ class SteamAppCategory extends Model
 
     /**
      * Get the Steam apps that belong to this category.
-     *
-     * @return BelongsToMany
      */
     public function steamApps(): BelongsToMany
     {

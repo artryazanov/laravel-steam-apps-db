@@ -23,7 +23,7 @@ class LaravelSteamAppsDbServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Load migrations
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
         // Register commands if running in the console
         if ($this->app->runningInConsole()) {

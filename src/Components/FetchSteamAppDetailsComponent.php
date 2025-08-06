@@ -32,15 +32,14 @@ class FetchSteamAppDetailsComponent
     /**
      * Fetch detailed information about Steam games and store it in the database.
      *
-     * @param int $limit Number of apps to process
-     * @param string|null $appid Optional Steam application ID to fetch details for a specific app
-     * @param Command|null $command The command instance for output
-     * @return void
+     * @param  int  $limit  Number of apps to process
+     * @param  string|null  $appid  Optional Steam application ID to fetch details for a specific app
+     * @param  Command|null  $command  The command instance for output
      */
     public function fetchSteamAppDetails(int $limit, ?string $appid = null, ?Command $command = null): void
     {
         if (empty($command)) {
-            $command = new NullCommand();
+            $command = new NullCommand;
         }
 
         if ($appid) {
@@ -49,8 +48,9 @@ class FetchSteamAppDetailsComponent
             // Get the specific app by appid
             $app = SteamApp::where('appid', $appid)->first();
 
-            if (!$app) {
+            if (! $app) {
                 $command->error("No Steam app found with appid: {$appid}");
+
                 return;
             }
 
@@ -65,6 +65,7 @@ class FetchSteamAppDetailsComponent
 
             if ($totalApps === 0) {
                 $command->info('No Steam apps to process.');
+
                 return;
             }
         }
@@ -87,11 +88,12 @@ class FetchSteamAppDetailsComponent
                 // Update the last_details_update field in the SteamApp model
                 $app->update(['last_details_update' => Carbon::now()]);
 
-                if (!$details) {
+                if (! $details) {
                     $command->warn("No details found for app {$app->name} (appid: {$app->appid})");
                     $failed++;
-                    $command->info("Waiting 2 seconds before the next request...");
+                    $command->info('Waiting 2 seconds before the next request...');
                     sleep(2);
+
                     continue;
                 }
 
@@ -124,7 +126,7 @@ class FetchSteamAppDetailsComponent
 
             // Add a 2-second delay between requests to avoid hitting rate limits
             if ($processed < $totalApps) {
-                $command->info("Waiting 2 seconds before the next request...");
+                $command->info('Waiting 2 seconds before the next request...');
                 sleep(2);
             }
         }
@@ -134,9 +136,6 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Get SteamApp records to process
-     *
-     * @param int $limit
-     * @return Collection
      */
     private function getSteamAppsToProcess(int $limit): Collection
     {
@@ -165,9 +164,7 @@ class FetchSteamAppDetailsComponent
     /**
      * Fetch details for a Steam app from the Steam API.
      *
-     * @param int $appid
-     * @param Command $command The command instance for output
-     * @return array|null
+     * @param  Command  $command  The command instance for output
      */
     private function fetchAppDetailsFromApi(int $appid, Command $command): ?array
     {
@@ -177,20 +174,23 @@ class FetchSteamAppDetailsComponent
             'l' => 'en',
         ]);
 
-        if (!$response->successful()) {
-            $command->error("Failed to fetch details for appid {$appid}: " . $response->status());
+        if (! $response->successful()) {
+            $command->error("Failed to fetch details for appid {$appid}: ".$response->status());
+
             return null;
         }
 
         $data = $response->json();
 
-        if (!isset($data[$appid]['success']) || !$data[$appid]['success']) {
+        if (! isset($data[$appid]['success']) || ! $data[$appid]['success']) {
             $command->warn("No success response for appid {$appid}");
+
             return null;
         }
 
-        if (!isset($data[$appid]['data'])) {
+        if (! isset($data[$appid]['data'])) {
             $command->warn("No data found for appid {$appid}");
+
             return null;
         }
 
@@ -199,10 +199,6 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Store Steam app details in the database.
-     *
-     * @param SteamApp $app
-     * @param array $details
-     * @return void
      */
     private function storeSteamAppDetails(SteamApp $app, array $details): void
     {
@@ -288,11 +284,6 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Store requirements for a platform.
-     *
-     * @param SteamApp $app
-     * @param string $platform
-     * @param array $requirements
-     * @return void
      */
     private function storeRequirements(SteamApp $app, string $platform, array $requirements): void
     {
@@ -310,10 +301,6 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Store screenshots.
-     *
-     * @param SteamApp $app
-     * @param array $screenshots
-     * @return void
      */
     private function storeScreenshots(SteamApp $app, array $screenshots): void
     {
@@ -347,10 +334,6 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Store movies.
-     *
-     * @param SteamApp $app
-     * @param array $movies
-     * @return void
      */
     private function storeMovies(SteamApp $app, array $movies): void
     {
@@ -389,10 +372,6 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Store categories.
-     *
-     * @param SteamApp $app
-     * @param array $categories
-     * @return void
      */
     private function storeCategories(SteamApp $app, array $categories): void
     {
@@ -415,10 +394,6 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Store genres.
-     *
-     * @param SteamApp $app
-     * @param array $genres
-     * @return void
      */
     private function storeGenres(SteamApp $app, array $genres): void
     {
@@ -441,10 +416,6 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Store developers.
-     *
-     * @param SteamApp $app
-     * @param array $developers
-     * @return void
      */
     private function storeDevelopers(SteamApp $app, array $developers): void
     {
@@ -466,10 +437,6 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Store publishers.
-     *
-     * @param SteamApp $app
-     * @param array $publishers
-     * @return void
      */
     private function storePublishers(SteamApp $app, array $publishers): void
     {
@@ -491,10 +458,6 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Store price info.
-     *
-     * @param SteamApp $app
-     * @param array $priceInfo
-     * @return void
      */
     private function storePriceInfo(SteamApp $app, array $priceInfo): void
     {

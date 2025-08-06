@@ -26,8 +26,6 @@ class SteamAppGenre extends Model
 
     /**
      * Get the Steam apps that belong to this genre.
-     *
-     * @return BelongsToMany
      */
     public function steamApps(): BelongsToMany
     {

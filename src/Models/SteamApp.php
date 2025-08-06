@@ -31,6 +31,7 @@ use Illuminate\Support\Carbon;
  * @property-read SteamAppDeveloper[] $developers
  * @property-read SteamAppPublisher[] $publishers
  * @property-read SteamAppPriceInfo|null $priceInfo
+ *
  * @method static Builder|SteamApp newModelQuery()
  * @method static Builder|SteamApp newQuery()
  * @method static Builder|SteamApp query()
@@ -50,8 +51,6 @@ class SteamApp extends Model
 
     /**
      * Create a new factory instance for the model.
-     *
-     * @return Factory
      */
     protected static function newFactory(): Factory
     {
@@ -65,8 +64,6 @@ class SteamApp extends Model
 
     /**
      * Get the detailed Steam app information for this app.
-     *
-     * @return HasOne
      */
     public function detail(): HasOne
     {
@@ -75,8 +72,6 @@ class SteamApp extends Model
 
     /**
      * Get the requirements for this app.
-     *
-     * @return HasMany
      */
     public function requirements(): HasMany
     {
@@ -85,8 +80,6 @@ class SteamApp extends Model
 
     /**
      * Get the screenshots for this app.
-     *
-     * @return HasMany
      */
     public function screenshots(): HasMany
     {
@@ -95,8 +88,6 @@ class SteamApp extends Model
 
     /**
      * Get the movies for this app.
-     *
-     * @return HasMany
      */
     public function movies(): HasMany
     {
@@ -105,8 +96,6 @@ class SteamApp extends Model
 
     /**
      * Get the categories for this app.
-     *
-     * @return BelongsToMany
      */
     public function categories(): BelongsToMany
     {
@@ -120,8 +109,6 @@ class SteamApp extends Model
 
     /**
      * Get the genres for this app.
-     *
-     * @return BelongsToMany
      */
     public function genres(): BelongsToMany
     {
@@ -135,8 +122,6 @@ class SteamApp extends Model
 
     /**
      * Get the developers for this app.
-     *
-     * @return BelongsToMany
      */
     public function developers(): BelongsToMany
     {
@@ -150,8 +135,6 @@ class SteamApp extends Model
 
     /**
      * Get the publishers for this app.
-     *
-     * @return BelongsToMany
      */
     public function publishers(): BelongsToMany
     {
@@ -165,8 +148,6 @@ class SteamApp extends Model
 
     /**
      * Get the price information for this app.
-     *
-     * @return HasOne
      */
     public function priceInfo(): HasOne
     {
@@ -175,8 +156,6 @@ class SteamApp extends Model
 
     /**
      * Get the news items for this app.
-     *
-     * @return HasMany
      */
     public function news(): HasMany
     {

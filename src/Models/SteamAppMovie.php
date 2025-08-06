@@ -50,8 +50,6 @@ class SteamAppMovie extends Model
 
     /**
      * Get the Steam app that this movie belongs to.
-     *
-     * @return BelongsTo
      */
     public function steamApp(): BelongsTo
     {

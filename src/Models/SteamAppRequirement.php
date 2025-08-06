@@ -34,8 +34,6 @@ class SteamAppRequirement extends Model
 
     /**
      * Get the Steam app that this requirement belongs to.
-     *
-     * @return BelongsTo
      */
     public function steamApp(): BelongsTo
     {

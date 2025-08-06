@@ -36,8 +36,6 @@ class SteamAppScreenshot extends Model
 
     /**
      * Get the Steam app that this screenshot belongs to.
-     *
-     * @return BelongsTo
      */
     public function steamApp(): BelongsTo
     {

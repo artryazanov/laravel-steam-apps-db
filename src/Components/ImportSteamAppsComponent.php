@@ -21,13 +21,12 @@ class ImportSteamAppsComponent
     /**
      * Import Steam apps from the Steam API and store them in the database.
      *
-     * @param Command|null $command The command instance for output
-     * @return void
+     * @param  Command|null  $command  The command instance for output
      */
     public function importSteamApps(?Command $command = null): void
     {
         if (empty($command)) {
-            $command = new NullCommand();
+            $command = new NullCommand;
         }
 
         try {
@@ -36,15 +35,17 @@ class ImportSteamAppsComponent
             // Make the HTTP request to the Steam API
             $response = Http::get(self::STEAM_API_URL);
 
-            if (!$response->successful()) {
-                $command->error('Failed to fetch data from Steam API: ' . $response->status());
+            if (! $response->successful()) {
+                $command->error('Failed to fetch data from Steam API: '.$response->status());
+
                 return;
             }
 
             $data = $response->json();
 
-            if (!isset($data['applist']['apps']) || !is_array($data['applist']['apps'])) {
+            if (! isset($data['applist']['apps']) || ! is_array($data['applist']['apps'])) {
                 $command->error('Invalid response format from Steam API');
+
                 return;
             }
 
@@ -57,14 +58,14 @@ class ImportSteamAppsComponent
             $chunkSize = 1000;
             $chunks = array_chunk($apps, $chunkSize);
 
-            $command->info('Processing apps in chunks of ' . $chunkSize);
+            $command->info('Processing apps in chunks of '.$chunkSize);
 
             $processed = 0;
             $created = 0;
             $updated = 0;
 
             foreach ($chunks as $index => $chunk) {
-                $command->info("Processing chunk " . ($index + 1) . " of " . count($chunks));
+                $command->info('Processing chunk '.($index + 1).' of '.count($chunks));
 
                 foreach ($chunk as $app) {
                     // Skip apps with empty names
@@ -94,8 +95,8 @@ class ImportSteamAppsComponent
             $command->info("Import completed: {$created} apps created, {$updated} apps updated");
 
         } catch (Exception $e) {
-            $command->error('An error occurred during import: ' . $e->getMessage());
-            Log::error('Steam apps import error: ' . $e->getMessage(), [
+            $command->error('An error occurred during import: '.$e->getMessage());
+            Log::error('Steam apps import error: '.$e->getMessage(), [
                 'exception' => $e,
             ]);
         }

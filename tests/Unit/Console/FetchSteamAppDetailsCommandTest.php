@@ -16,7 +16,7 @@ class FetchSteamAppDetailsCommandTest extends TestCase
     /**
      * Test that the command fetches and stores Steam game details correctly.
      */
-    public function testFetchSteamGameDetails(): void
+    public function test_fetch_steam_game_details(): void
     {
         // Create a Steam app that will have an associated game
         $steamAppWithGame = SteamApp::factory()->create([
@@ -179,7 +179,7 @@ class FetchSteamAppDetailsCommandTest extends TestCase
     /**
      * Test that the command prioritizes apps correctly.
      */
-    public function testPrioritizesAppsCorrectly(): void
+    public function test_prioritizes_apps_correctly(): void
     {
         // Create Steam apps
         // High priority app (with associated game and no details)
@@ -299,7 +299,7 @@ class FetchSteamAppDetailsCommandTest extends TestCase
     /**
      * Test that the command fetches details for a specific app when appid is provided.
      */
-    public function testFetchDetailsForSpecificApp(): void
+    public function test_fetch_details_for_specific_app(): void
     {
         // Create multiple Steam apps
         $targetApp = SteamApp::factory()->create([

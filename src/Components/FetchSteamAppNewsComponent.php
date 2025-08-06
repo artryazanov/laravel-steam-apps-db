@@ -24,15 +24,14 @@ class FetchSteamAppNewsComponent
     /**
      * Fetch the latest news for Steam apps and store them in the database.
      *
-     * @param int $limit Number of apps to process
-     * @param int|null $appid Specific Steam app ID to fetch news for
-     * @param Command|null $command The command instance for output
-     * @return void
+     * @param  int  $limit  Number of apps to process
+     * @param  int|null  $appid  Specific Steam app ID to fetch news for
+     * @param  Command|null  $command  The command instance for output
      */
     public function fetchSteamAppNews(int $limit, ?int $appid = null, ?Command $command = null): void
     {
         if (empty($command)) {
-            $command = new NullCommand();
+            $command = new NullCommand;
         }
 
         if ($appid) {
@@ -41,8 +40,9 @@ class FetchSteamAppNewsComponent
             // Get the specific app by appid
             $app = SteamApp::where('appid', $appid)->first();
 
-            if (!$app) {
+            if (! $app) {
                 $command->error("Steam app with appid {$appid} not found in the database.");
+
                 return;
             }
 
@@ -59,6 +59,7 @@ class FetchSteamAppNewsComponent
 
             if ($totalApps === 0) {
                 $command->info('No Steam apps to process.');
+
                 return;
             }
 
@@ -81,11 +82,12 @@ class FetchSteamAppNewsComponent
                 // Update the last_news_update field in the SteamApp model
                 $app->update(['last_news_update' => Carbon::now()]);
 
-                if (!$news || empty($news['newsitems'])) {
+                if (! $news || empty($news['newsitems'])) {
                     $command->warn("No news found for app {$app->name} (appid: {$app->appid})");
                     $failed++;
-                    $command->info("Waiting 2 seconds before the next request...");
+                    $command->info('Waiting 2 seconds before the next request...');
                     sleep(2);
+
                     continue;
                 }
 
@@ -118,7 +120,7 @@ class FetchSteamAppNewsComponent
 
             // Add a 2-second delay between requests to avoid hitting rate limits
             if ($processed < $totalApps) {
-                $command->info("Waiting 2 seconds before the next request...");
+                $command->info('Waiting 2 seconds before the next request...');
                 sleep(2);
             }
         }
@@ -128,9 +130,6 @@ class FetchSteamAppNewsComponent
 
     /**
      * Get SteamApp records to process
-     *
-     * @param int $limit
-     * @return Collection
      */
     private function getSteamAppsToProcess(int $limit): Collection
     {
@@ -159,9 +158,7 @@ class FetchSteamAppNewsComponent
     /**
      * Fetch news for a Steam app from the Steam API.
      *
-     * @param int $appid
-     * @param Command $command The command instance for output
-     * @return array|null
+     * @param  Command  $command  The command instance for output
      */
     private function fetchNewsFromApi(int $appid, Command $command): ?array
     {
@@ -172,15 +169,17 @@ class FetchSteamAppNewsComponent
             'format' => 'json',
         ]);
 
-        if (!$response->successful()) {
-            $command->error("Failed to fetch news for appid {$appid}: " . $response->status());
+        if (! $response->successful()) {
+            $command->error("Failed to fetch news for appid {$appid}: ".$response->status());
+
             return null;
         }
 
         $data = $response->json();
 
-        if (!isset($data['appnews']) || !isset($data['appnews']['newsitems'])) {
+        if (! isset($data['appnews']) || ! isset($data['appnews']['newsitems'])) {
             $command->warn("No news data found for appid {$appid}");
+
             return null;
         }
 
@@ -189,10 +188,6 @@ class FetchSteamAppNewsComponent
 
     /**
      * Store Steam app news in the database.
-     *
-     * @param SteamApp $app
-     * @param array $newsItems
-     * @return void
      */
     private function storeSteamAppNews(SteamApp $app, array $newsItems): void
     {

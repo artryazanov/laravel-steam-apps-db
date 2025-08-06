@@ -11,7 +11,7 @@ class ImportSteamAppsCommandTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function testCommandImportsSteamAppsSuccessfully(): void
+    public function test_command_imports_steam_apps_successfully(): void
     {
         // Mock HTTP response from Steam API
         Http::fake([
@@ -21,9 +21,9 @@ class ImportSteamAppsCommandTest extends TestCase
                         ['appid' => 1, 'name' => 'Test App 1'],
                         ['appid' => 2, 'name' => 'Test App 2'],
                         ['appid' => 3, 'name' => 'Test App 3'],
-                    ]
-                ]
-            ], 200)
+                    ],
+                ],
+            ], 200),
         ]);
 
         // Run the command
@@ -41,15 +41,15 @@ class ImportSteamAppsCommandTest extends TestCase
         // Assert that the apps were created in the database
         $this->assertDatabaseHas('steam_apps', [
             'appid' => 1,
-            'name' => 'Test App 1'
+            'name' => 'Test App 1',
         ]);
         $this->assertDatabaseHas('steam_apps', [
             'appid' => 2,
-            'name' => 'Test App 2'
+            'name' => 'Test App 2',
         ]);
         $this->assertDatabaseHas('steam_apps', [
             'appid' => 3,
-            'name' => 'Test App 3'
+            'name' => 'Test App 3',
         ]);
 
         // Verify HTTP request was made
@@ -59,16 +59,16 @@ class ImportSteamAppsCommandTest extends TestCase
         });
     }
 
-    public function testCommandUpdatesExistingSteamApps(): void
+    public function test_command_updates_existing_steam_apps(): void
     {
         // Create existing steam apps
         SteamApp::create([
             'appid' => 1,
-            'name' => 'Old App Name 1'
+            'name' => 'Old App Name 1',
         ]);
         SteamApp::create([
             'appid' => 2,
-            'name' => 'Old App Name 2'
+            'name' => 'Old App Name 2',
         ]);
 
         // Mock HTTP response from Steam API
@@ -79,9 +79,9 @@ class ImportSteamAppsCommandTest extends TestCase
                         ['appid' => 1, 'name' => 'Updated App Name 1'],
                         ['appid' => 2, 'name' => 'Updated App Name 2'],
                         ['appid' => 3, 'name' => 'New App 3'],
-                    ]
-                ]
-            ], 200)
+                    ],
+                ],
+            ], 200),
         ]);
 
         // Run the command
@@ -92,25 +92,25 @@ class ImportSteamAppsCommandTest extends TestCase
         // Assert that the apps were updated in the database
         $this->assertDatabaseHas('steam_apps', [
             'appid' => 1,
-            'name' => 'Updated App Name 1'
+            'name' => 'Updated App Name 1',
         ]);
         $this->assertDatabaseHas('steam_apps', [
             'appid' => 2,
-            'name' => 'Updated App Name 2'
+            'name' => 'Updated App Name 2',
         ]);
         $this->assertDatabaseHas('steam_apps', [
             'appid' => 3,
-            'name' => 'New App 3'
+            'name' => 'New App 3',
         ]);
     }
 
-    public function testCommandHandlesApiErrorsGracefully(): void
+    public function test_command_handles_api_errors_gracefully(): void
     {
         // Mock HTTP response from Steam API with an error
         Http::fake([
             'https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json' => Http::response([
-                'error' => 'API rate limit exceeded'
-            ], 429)
+                'error' => 'API rate limit exceeded',
+            ], 429),
         ]);
 
         // Run the command
@@ -131,13 +131,13 @@ class ImportSteamAppsCommandTest extends TestCase
         });
     }
 
-    public function testCommandHandlesInvalidResponseFormatGracefully(): void
+    public function test_command_handles_invalid_response_format_gracefully(): void
     {
         // Mock HTTP response from Steam API with invalid format
         Http::fake([
             'https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json' => Http::response([
-                'invalid' => 'response format'
-            ], 200)
+                'invalid' => 'response format',
+            ], 200),
         ]);
 
         // Run the command
@@ -158,7 +158,7 @@ class ImportSteamAppsCommandTest extends TestCase
         });
     }
 
-    public function testCommandHandlesExceptionsGracefully(): void
+    public function test_command_handles_exceptions_gracefully(): void
     {
         // Create a mock that throws an exception
         Http::fake(function () {
@@ -176,7 +176,7 @@ class ImportSteamAppsCommandTest extends TestCase
         $this->assertDatabaseCount('steam_apps', 0);
     }
 
-    public function testCommandSkipsAppsWithEmptyNames(): void
+    public function test_command_skips_apps_with_empty_names(): void
     {
         // Mock HTTP response from Steam API with some apps having empty names
         Http::fake([
@@ -187,9 +187,9 @@ class ImportSteamAppsCommandTest extends TestCase
                         ['appid' => 2, 'name' => ''],  // Empty name
                         ['appid' => 3, 'name' => 'Test App 3'],
                         ['appid' => 4, 'name' => null], // Null name
-                    ]
-                ]
-            ], 200)
+                    ],
+                ],
+            ], 200),
         ]);
 
         // Run the command
@@ -202,11 +202,11 @@ class ImportSteamAppsCommandTest extends TestCase
         // Assert that only apps with non-empty names were created
         $this->assertDatabaseHas('steam_apps', [
             'appid' => 1,
-            'name' => 'Test App 1'
+            'name' => 'Test App 1',
         ]);
         $this->assertDatabaseHas('steam_apps', [
             'appid' => 3,
-            'name' => 'Test App 3'
+            'name' => 'Test App 3',
         ]);
         $this->assertDatabaseCount('steam_apps', 2);
     }

@@ -16,7 +16,7 @@ class FetchSteamAppNewsCommandTest extends TestCase
     /**
      * Test that the command fetches and stores Steam app news correctly.
      */
-    public function testFetchSteamAppNews(): void
+    public function test_fetch_steam_app_news(): void
     {
         // Create a Steam app that will have an associated game
         $steamApp = SteamApp::factory()->create([
@@ -41,7 +41,7 @@ class FetchSteamAppNewsCommandTest extends TestCase
                             'date' => 1752581747,
                             'feedname' => 'PCGamesN',
                             'feed_type' => 0,
-                            'appid' => 570
+                            'appid' => 570,
                         ],
                         [
                             'gid' => '1802893906902262',
@@ -56,11 +56,11 @@ class FetchSteamAppNewsCommandTest extends TestCase
                             'feed_type' => 1,
                             'appid' => 570,
                             'tags' => [
-                                'patchnotes'
-                            ]
-                        ]
-                    ]
-                ]
+                                'patchnotes',
+                            ],
+                        ],
+                    ],
+                ],
             ]),
             // Mock responses for other apps as needed
             '*' => Http::response([
@@ -110,7 +110,7 @@ class FetchSteamAppNewsCommandTest extends TestCase
     /**
      * Test that the command prioritizes apps correctly.
      */
-    public function testPrioritizesAppsCorrectly(): void
+    public function test_prioritizes_apps_correctly(): void
     {
         // Create Steam apps
         // High priority app (with associated game and no news)
@@ -156,10 +156,10 @@ class FetchSteamAppNewsCommandTest extends TestCase
                             'date' => 1752581747,
                             'feedname' => 'PCGamesN',
                             'feed_type' => 0,
-                            'appid' => 570
-                        ]
-                    ]
-                ]
+                            'appid' => 570,
+                        ],
+                    ],
+                ],
             ]),
         ]);
 
@@ -182,7 +182,7 @@ class FetchSteamAppNewsCommandTest extends TestCase
     /**
      * Test that the command fetches news for a specific app when appid option is provided.
      */
-    public function testFetchNewsForSpecificApp(): void
+    public function test_fetch_news_for_specific_app(): void
     {
         // Create a Steam app with a specific appid
         $specificApp = SteamApp::factory()->create([
@@ -207,10 +207,10 @@ class FetchSteamAppNewsCommandTest extends TestCase
                             'date' => 1753000000,
                             'feedname' => 'tf2_blog',
                             'feed_type' => 1,
-                            'appid' => 440
-                        ]
-                    ]
-                ]
+                            'appid' => 440,
+                        ],
+                    ],
+                ],
             ]),
         ]);
 

@@ -28,7 +28,7 @@ class ImportSteamAppsCommand extends Command
     {
         $this->info('Starting import of Steam apps...');
 
-        $importComponent = new ImportSteamAppsComponent();
+        $importComponent = new ImportSteamAppsComponent;
         $importComponent->importSteamApps($this);
 
         $this->info('Import of Steam apps completed!');

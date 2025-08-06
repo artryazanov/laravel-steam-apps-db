@@ -40,7 +40,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
     /**
      * Test that the storeScreenshots method correctly handles screenshots.
      */
-    public function testStoreScreenshots(): void
+    public function test_store_screenshots(): void
     {
         // Create a test app
         $app = SteamApp::factory()->create([
@@ -104,7 +104,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
         ];
 
         // Create an instance of the component and call the storeScreenshots method
-        $component = new FetchSteamAppDetailsComponent();
+        $component = new FetchSteamAppDetailsComponent;
         $method = new ReflectionMethod($component, 'storeScreenshots');
         $method->setAccessible(true);
         $method->invoke($component, $app, $newScreenshots);
@@ -147,7 +147,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
     /**
      * Test that the storeMovies method correctly handles movies.
      */
-    public function testStoreMovies(): void
+    public function test_store_movies(): void
     {
         // Create a test app
         $app = SteamApp::factory()->create([
@@ -270,7 +270,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
         ];
 
         // Create an instance of the component and call the storeMovies method
-        $component = new FetchSteamAppDetailsComponent();
+        $component = new FetchSteamAppDetailsComponent;
         $method = new ReflectionMethod($component, 'storeMovies');
         $method->setAccessible(true);
         $method->invoke($component, $app, $newMovies);
@@ -328,7 +328,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
     /**
      * Test that the fetchSteamAppDetails method correctly fetches details for a specific app by appid.
      */
-    public function testFetchSteamAppDetailsForSpecificApp(): void
+    public function test_fetch_steam_app_details_for_specific_app(): void
     {
         // Create multiple Steam apps
         $targetApp = SteamApp::factory()->create([
@@ -380,7 +380,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
         ]);
 
         // Create an instance of the component
-        $component = new FetchSteamAppDetailsComponent();
+        $component = new FetchSteamAppDetailsComponent;
 
         // Call the fetchSteamAppDetails method with a specific appid
         $component->fetchSteamAppDetails(10, '123456', $this->mockCommand);

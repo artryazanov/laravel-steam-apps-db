@@ -41,7 +41,7 @@ class FetchSteamAppNewsComponentTest extends TestCase
     /**
      * Test that the storeSteamAppNews method correctly handles news items.
      */
-    public function testStoreSteamAppNews(): void
+    public function test_store_steam_app_news(): void
     {
         // Create a test app
         $app = SteamApp::factory()->create([
@@ -142,7 +142,7 @@ class FetchSteamAppNewsComponentTest extends TestCase
         ];
 
         // Create an instance of the component and call the storeSteamAppNews method
-        $component = new FetchSteamAppNewsComponent();
+        $component = new FetchSteamAppNewsComponent;
         $method = new ReflectionMethod($component, 'storeSteamAppNews');
         $method->setAccessible(true);
         $method->invoke($component, $app, $newNewsItems);
@@ -198,7 +198,7 @@ class FetchSteamAppNewsComponentTest extends TestCase
     /**
      * Test that the fetchNewsFromApi method correctly fetches news from the Steam API.
      */
-    public function testFetchNewsFromApi(): void
+    public function test_fetch_news_from_api(): void
     {
         // Mock the HTTP response
         Http::fake([
@@ -217,14 +217,14 @@ class FetchSteamAppNewsComponentTest extends TestCase
                             'date' => 1700000000,
                             'feedname' => 'Test Feedname',
                             'feed_type' => 0,
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ]),
         ]);
 
         // Create an instance of the component and call the fetchNewsFromApi method
-        $component = new FetchSteamAppNewsComponent();
+        $component = new FetchSteamAppNewsComponent;
         $method = new ReflectionMethod($component, 'fetchNewsFromApi');
         $method->setAccessible(true);
         $result = $method->invoke($component, 570, $this->mockCommand);
@@ -240,10 +240,10 @@ class FetchSteamAppNewsComponentTest extends TestCase
      * Test that the getSteamAppsToProcess method correctly returns apps to process
      * based on their last_news_update status and the specified limit.
      */
-    public function testGetSteamAppsToProcess(): void
+    public function test_get_steam_apps_to_process(): void
     {
         // Create an instance of the component and get access to the private method
-        $component = new FetchSteamAppNewsComponent();
+        $component = new FetchSteamAppNewsComponent;
         $method = new ReflectionMethod($component, 'getSteamAppsToProcess');
         $method->setAccessible(true);
 
@@ -371,7 +371,7 @@ class FetchSteamAppNewsComponentTest extends TestCase
     /**
      * Test that the fetchSteamAppNews method correctly fetches and stores news.
      */
-    public function testFetchSteamAppNews(): void
+    public function test_fetch_steam_app_news(): void
     {
         // Create a Steam app
         $steamApp = SteamApp::factory()->create([
@@ -396,14 +396,14 @@ class FetchSteamAppNewsComponentTest extends TestCase
                             'date' => 1700000000,
                             'feedname' => 'Test Feedname',
                             'feed_type' => 0,
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ]),
         ]);
 
         // Create an instance of the component and call the fetchSteamAppNews method
-        $component = new FetchSteamAppNewsComponent();
+        $component = new FetchSteamAppNewsComponent;
         $component->fetchSteamAppNews(1, null, $this->mockCommand);
 
         // Verify that the news was stored

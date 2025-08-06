@@ -57,8 +57,6 @@ class SteamAppNews extends Model
 
     /**
      * Get the Steam app that this news item belongs to.
-     *
-     * @return BelongsTo
      */
     public function steamApp(): BelongsTo
     {

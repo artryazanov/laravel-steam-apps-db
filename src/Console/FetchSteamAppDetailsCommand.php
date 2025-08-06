@@ -27,8 +27,9 @@ class FetchSteamAppDetailsCommand extends Command
     public function handle(): void
     {
         $argCount = $this->argument('count');
-        if (!is_numeric($argCount)) {
+        if (! is_numeric($argCount)) {
             $this->error("Count has wrong value: $argCount!");
+
             return;
         }
 
@@ -37,10 +38,9 @@ class FetchSteamAppDetailsCommand extends Command
 
         $this->info('Starting fetch of Steam app details...');
 
-        $fetchComponent = new FetchSteamAppDetailsComponent();
+        $fetchComponent = new FetchSteamAppDetailsComponent;
         $fetchComponent->fetchSteamAppDetails($limit, $appid, $this);
 
         $this->info('Fetch of Steam app details completed!');
     }
-
 }

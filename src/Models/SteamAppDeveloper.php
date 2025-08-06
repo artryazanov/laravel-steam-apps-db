@@ -24,8 +24,6 @@ class SteamAppDeveloper extends Model
 
     /**
      * Get the Steam apps that belong to this developer.
-     *
-     * @return BelongsToMany
      */
     public function steamApps(): BelongsToMany
     {

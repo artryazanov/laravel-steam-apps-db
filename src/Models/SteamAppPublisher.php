@@ -24,8 +24,6 @@ class SteamAppPublisher extends Model
 
     /**
      * Get the Steam apps that belong to this publisher.
-     *
-     * @return BelongsToMany
      */
     public function steamApps(): BelongsToMany
     {
