@@ -1,4 +1,4 @@
-name: linter
+name: Run Pint
 
 on:
   push:
