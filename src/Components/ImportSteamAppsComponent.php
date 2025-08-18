@@ -3,11 +3,11 @@
 namespace Artryazanov\LaravelSteamAppsDb\Components;
 
 use Artryazanov\LaravelSteamAppsDb\Console\NullCommand;
+use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
-use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 
 class ImportSteamAppsComponent
 {
