@@ -7,7 +7,7 @@ use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 
 class ImportSteamAppsComponent
 {
@@ -95,10 +95,9 @@ class ImportSteamAppsComponent
             $command->info("Import completed: {$created} apps created, {$updated} apps updated");
 
         } catch (Exception $e) {
-            $command->error('An error occurred during import: '.$e->getMessage());
-            Log::error('Steam apps import error: '.$e->getMessage(), [
-                'exception' => $e,
-            ]);
+            $errorMessage = 'An error occurred during import: '.$e->getMessage();
+            $command->error($errorMessage);
+            report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
         }
     }
 }

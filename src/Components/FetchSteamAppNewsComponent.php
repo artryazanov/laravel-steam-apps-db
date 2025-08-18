@@ -6,11 +6,13 @@ use Artryazanov\LaravelSteamAppsDb\Console\NullCommand;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppNews;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 
 class FetchSteamAppNewsComponent
 {
@@ -98,21 +100,17 @@ class FetchSteamAppNewsComponent
                     DB::commit();
                     $success++;
                     $command->info("Successfully stored news for app {$app->name} (appid: {$app->appid})");
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     DB::rollBack();
-                    $command->error("Failed to store news for app {$app->name} (appid: {$app->appid}): {$e->getMessage()}");
-                    Log::error("Failed to store Steam app news: {$e->getMessage()}", [
-                        'exception' => $e,
-                        'appid' => $app->appid,
-                    ]);
+                    $errorMessage = "Failed to store news for app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
+                    $command->error($errorMessage);
+                    report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
                     $failed++;
                 }
-            } catch (\Exception $e) {
-                $command->error("Error processing app {$app->name} (appid: {$app->appid}): {$e->getMessage()}");
-                Log::error("Error processing Steam app news: {$e->getMessage()}", [
-                    'exception' => $e,
-                    'appid' => $app->appid,
-                ]);
+            } catch (Exception $e) {
+                $errorMessage = "Error processing app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
+                $command->error($errorMessage);
+                report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
                 $failed++;
             }
 
