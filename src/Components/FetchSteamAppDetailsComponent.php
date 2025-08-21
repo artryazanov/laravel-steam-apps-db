@@ -205,11 +205,11 @@ class FetchSteamAppDetailsComponent
             $comingSoonFlag = $details['release_date']['coming_soon'] ?? false;
             $dateString = $details['release_date']['date'] ?? null;
 
-            if (!$comingSoonFlag && is_string($dateString)) {
+            if (! $comingSoonFlag && is_string($dateString)) {
                 $trimmed = trim($dateString);
                 // Skip common non-date placeholders
                 $placeholders = ['coming soon', 'tba', 'to be announced', 'to be determined'];
-                if ($trimmed !== '' && !in_array(strtolower($trimmed), $placeholders, true)) {
+                if ($trimmed !== '' && ! in_array(strtolower($trimmed), $placeholders, true)) {
                     try {
                         $releaseDate = Carbon::parse($trimmed);
                     } catch (Exception $e) {
