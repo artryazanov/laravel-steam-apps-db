@@ -3,6 +3,7 @@
 namespace Artryazanov\LaravelSteamAppsDb\Components;
 
 use Artryazanov\LaravelSteamAppsDb\Console\NullCommand;
+use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppCategory;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDetail;
@@ -19,8 +20,6 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 
 class FetchSteamAppDetailsComponent
 {
