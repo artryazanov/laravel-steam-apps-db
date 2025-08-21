@@ -200,6 +200,27 @@ class FetchSteamAppDetailsComponent
      */
     private function storeSteamAppDetails(SteamApp $app, array $details): void
     {
+        // Prepare release date safely (avoid parsing non-date strings like 'Coming soon')
+        $releaseDate = null;
+        if (isset($details['release_date']) && is_array($details['release_date'])) {
+            $comingSoonFlag = $details['release_date']['coming_soon'] ?? false;
+            $dateString = $details['release_date']['date'] ?? null;
+
+            if (!$comingSoonFlag && is_string($dateString)) {
+                $trimmed = trim($dateString);
+                // Skip common non-date placeholders
+                $placeholders = ['coming soon', 'tba', 'to be announced', 'to be determined'];
+                if ($trimmed !== '' && !in_array(strtolower($trimmed), $placeholders, true)) {
+                    try {
+                        $releaseDate = Carbon::parse($trimmed);
+                    } catch (Exception $e) {
+                        // Leave as null if parsing fails
+                        $releaseDate = null;
+                    }
+                }
+            }
+        }
+
         // Create or update the SteamAppDetail record
         SteamAppDetail::updateOrCreate(
             ['steam_app_id' => $app->id],
@@ -222,7 +243,7 @@ class FetchSteamAppDetailsComponent
                 'linux' => $details['platforms']['linux'] ?? false,
                 'background' => $details['background'] ?? null,
                 'background_raw' => $details['background_raw'] ?? null,
-                'release_date' => isset($details['release_date']['date']) ? Carbon::parse($details['release_date']['date']) : null,
+                'release_date' => $releaseDate,
                 'coming_soon' => $details['release_date']['coming_soon'] ?? false,
                 'support_url' => $details['support_info']['url'] ?? null,
                 'support_email' => $details['support_info']['email'] ?? null,

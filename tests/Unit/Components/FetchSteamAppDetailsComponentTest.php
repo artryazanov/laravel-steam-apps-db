@@ -408,4 +408,115 @@ class FetchSteamAppDetailsComponentTest extends TestCase
             'steam_app_id' => $otherApp->id,
         ]);
     }
+
+    /**
+     * Ensure release_date is null when coming_soon is true and date is a placeholder like "Coming soon".
+     */
+    public function test_release_date_is_null_when_coming_soon_true_with_placeholder(): void
+    {
+        // Create the target Steam app
+        $app = SteamApp::factory()->create([
+            'appid' => 123456,
+            'name' => 'Coming Soon App',
+        ]);
+
+        // Fake Steam API response
+        Http::fake([
+            'store.steampowered.com/api/appdetails?appids=123456&cc=us&l=en' => Http::response([
+                '123456' => [
+                    'success' => true,
+                    'data' => [
+                        'type' => 'game',
+                        'name' => 'Coming Soon App',
+                        'steam_appid' => 123456,
+                        'required_age' => 0,
+                        'is_free' => false,
+                        'platforms' => [
+                            'windows' => true,
+                            'mac' => false,
+                            'linux' => false,
+                        ],
+                        'release_date' => [
+                            'coming_soon' => true,
+                            'date' => 'Coming soon',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Execute
+        $component = new FetchSteamAppDetailsComponent;
+        $component->fetchSteamAppDetails(1, '123456', $this->mockCommand);
+
+        // Assert DB stored with release_date null and coming_soon true
+        $this->assertDatabaseHas('steam_app_details', [
+            'steam_app_id' => $app->id,
+            'name' => 'Coming Soon App',
+            'type' => 'game',
+            'coming_soon' => 1,
+        ]);
+        // release_date must be null
+        $this->assertDatabaseMissing('steam_app_details', [
+            'steam_app_id' => $app->id,
+            'release_date' => '0000-00-00',
+        ]);
+        $this->assertDatabaseHas('steam_app_details', [
+            'steam_app_id' => $app->id,
+            'release_date' => null,
+        ]);
+    }
+
+    /**
+     * Ensure release_date is null when date is a placeholder (e.g., "TBA") even if coming_soon is false.
+     */
+    public function test_release_date_is_null_when_placeholder_date_and_not_coming_soon(): void
+    {
+        // Create the target Steam app
+        $app = SteamApp::factory()->create([
+            'appid' => 654321,
+            'name' => 'TBA App',
+        ]);
+
+        // Fake Steam API response with case-insensitive placeholder
+        Http::fake([
+            'store.steampowered.com/api/appdetails?appids=654321&cc=us&l=en' => Http::response([
+                '654321' => [
+                    'success' => true,
+                    'data' => [
+                        'type' => 'game',
+                        'name' => 'TBA App',
+                        'steam_appid' => 654321,
+                        'required_age' => 0,
+                        'is_free' => false,
+                        'platforms' => [
+                            'windows' => true,
+                            'mac' => true,
+                            'linux' => false,
+                        ],
+                        'release_date' => [
+                            'coming_soon' => false,
+                            'date' => 'tBa',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Execute
+        $component = new FetchSteamAppDetailsComponent;
+        $component->fetchSteamAppDetails(1, '654321', $this->mockCommand);
+
+        // Assert DB stored with release_date null and coming_soon false
+        $this->assertDatabaseHas('steam_app_details', [
+            'steam_app_id' => $app->id,
+            'name' => 'TBA App',
+            'type' => 'game',
+            'coming_soon' => 0,
+        ]);
+        $this->assertDatabaseHas('steam_app_details', [
+            'steam_app_id' => $app->id,
+            'release_date' => null,
+        ]);
+    }
 }
