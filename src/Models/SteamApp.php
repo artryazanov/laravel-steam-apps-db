@@ -34,7 +34,6 @@ use Illuminate\Support\Carbon;
  * @property-read SteamAppPriceInfo|null $priceInfo The price information for this app
  * @property-read SteamAppNews[] $news The news items for this app
  * @property-read string $headerImage URL to the header image of the Steam application
- * @property-read string|null $libraryImage URL to the library image of the Steam application
  * @property-read string $steamAppUrl URL to the Steam store page of the application
  *
  * @method static Builder|SteamApp newModelQuery()
@@ -173,18 +172,6 @@ class SteamApp extends Model
     public function getHeaderImageAttribute(): string
     {
         return "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$this->appid}/header.jpg";
-    }
-
-    /**
-     * Get the URL for the library image of the Steam application.
-     */
-    public function getLibraryImageAttribute(): ?string
-    {
-        if ($this->detail?->type === SteamAppType::GAME->value) {
-            return "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$this->appid}/library_600x900.jpg";
-        }
-
-        return null;
     }
 
     /**
