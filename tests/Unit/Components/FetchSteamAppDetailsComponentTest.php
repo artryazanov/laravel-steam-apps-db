@@ -522,6 +522,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
             'release_date' => null,
         ]);
     }
+
     public function test_library_hero_image_is_saved_when_url_exists(): void
     {
         $appid = 789012;
