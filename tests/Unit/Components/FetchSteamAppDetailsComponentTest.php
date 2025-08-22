@@ -522,4 +522,95 @@ class FetchSteamAppDetailsComponentTest extends TestCase
             'release_date' => null,
         ]);
     }
+    public function test_library_hero_image_is_saved_when_url_exists(): void
+    {
+        $appid = 789012;
+        $app = SteamApp::factory()->create([
+            'appid' => $appid,
+            'name' => 'Hero Image App',
+        ]);
+
+        $heroUrl = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$appid}/library_hero.jpg";
+        $libraryUrl = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$appid}/library_600x900.jpg";
+
+        Http::fake([
+            "store.steampowered.com/api/appdetails?appids={$appid}&cc=us&l=en" => Http::response([
+                (string) $appid => [
+                    'success' => true,
+                    'data' => [
+                        'type' => 'game',
+                        'name' => 'Hero Image App',
+                        'steam_appid' => $appid,
+                        'required_age' => 0,
+                        'is_free' => false,
+                        'platforms' => [
+                            'windows' => true,
+                            'mac' => false,
+                            'linux' => false,
+                        ],
+                        'release_date' => [
+                            'coming_soon' => false,
+                            'date' => '2023-02-02',
+                        ],
+                    ],
+                ],
+            ]),
+            $heroUrl => Http::response('', 200),
+            $libraryUrl => Http::response('', 200),
+            '*' => Http::response('', 404),
+        ]);
+
+        $component = new FetchSteamAppDetailsComponent;
+        $component->fetchSteamAppDetails(1, (string) $appid, $this->mockCommand);
+
+        $this->assertDatabaseHas('steam_app_details', [
+            'steam_app_id' => $app->id,
+            'library_hero_image' => $heroUrl,
+        ]);
+    }
+
+    public function test_library_hero_image_is_null_when_url_missing(): void
+    {
+        $appid = 987654;
+        $app = SteamApp::factory()->create([
+            'appid' => $appid,
+            'name' => 'No Hero Image App',
+        ]);
+
+        $heroUrl = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$appid}/library_hero.jpg";
+
+        Http::fake([
+            "store.steampowered.com/api/appdetails?appids={$appid}&cc=us&l=en" => Http::response([
+                (string) $appid => [
+                    'success' => true,
+                    'data' => [
+                        'type' => 'game',
+                        'name' => 'No Hero Image App',
+                        'steam_appid' => $appid,
+                        'required_age' => 0,
+                        'is_free' => false,
+                        'platforms' => [
+                            'windows' => true,
+                            'mac' => false,
+                            'linux' => false,
+                        ],
+                        'release_date' => [
+                            'coming_soon' => false,
+                            'date' => '2022-12-12',
+                        ],
+                    ],
+                ],
+            ]),
+            $heroUrl => Http::response('', 404),
+            'shared.akamai.steamstatic.com/*' => Http::response('', 404),
+        ]);
+
+        $component = new FetchSteamAppDetailsComponent;
+        $component->fetchSteamAppDetails(1, (string) $appid, $this->mockCommand);
+
+        $this->assertDatabaseHas('steam_app_details', [
+            'steam_app_id' => $app->id,
+            'library_hero_image' => null,
+        ]);
+    }
 }

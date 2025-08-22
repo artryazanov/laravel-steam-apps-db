@@ -100,6 +100,8 @@ class FetchSteamAppDetailsComponent
 
                 // Resolve library image URL and inject into details
                 $details['library_image'] = $this->resolveLibraryImageUrl($app->appid);
+                // Resolve library hero image URL and inject into details
+                $details['library_hero_image'] = $this->resolveLibraryHeroImageUrl($app->appid);
 
                 // Store details in a database
                 DB::beginTransaction();
@@ -198,11 +200,10 @@ class FetchSteamAppDetailsComponent
     }
 
     /**
-     * Check if the library image exists for given appid and return its URL or null.
+     * Perform a lightweight existence check for a remote image URL (HEAD, fallback to GET).
      */
-    private function resolveLibraryImageUrl(int $appid): ?string
+    private function resolveRemoteImageUrl(string $url): ?string
     {
-        $url = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$appid}/library_600x900.jpg";
         try {
             $response = Http::timeout(5)->connectTimeout(3)->send('HEAD', $url);
             if ($response->ok()) {
@@ -221,6 +222,26 @@ class FetchSteamAppDetailsComponent
         }
 
         return null;
+    }
+
+    /**
+     * Check if the library image exists for given appid and return its URL or null.
+     */
+    private function resolveLibraryImageUrl(int $appid): ?string
+    {
+        $url = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$appid}/library_600x900.jpg";
+
+        return $this->resolveRemoteImageUrl($url);
+    }
+
+    /**
+     * Check if the library hero image exists for given appid and return its URL or null.
+     */
+    private function resolveLibraryHeroImageUrl(int $appid): ?string
+    {
+        $url = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$appid}/library_hero.jpg";
+
+        return $this->resolveRemoteImageUrl($url);
     }
 
     /**
@@ -263,6 +284,7 @@ class FetchSteamAppDetailsComponent
                 'supported_languages' => $details['supported_languages'] ?? null,
                 'header_image' => $details['header_image'] ?? null,
                 'library_image' => $details['library_image'] ?? null,
+                'library_hero_image' => $details['library_hero_image'] ?? null,
                 'capsule_image' => $details['capsule_image'] ?? null,
                 'capsule_imagev5' => $details['capsule_imagev5'] ?? null,
                 'website' => $details['website'] ?? null,
