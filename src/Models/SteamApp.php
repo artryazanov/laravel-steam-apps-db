@@ -3,7 +3,6 @@
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Artryazanov\LaravelSteamAppsDb\Database\Factories\SteamAppFactory;
-use Artryazanov\LaravelSteamAppsDb\Enums\SteamAppType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
