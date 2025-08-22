@@ -183,6 +183,7 @@ class SteamApp extends Model
         if ($this->detail?->type === SteamAppType::GAME->value) {
             return "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$this->appid}/library_600x900.jpg";
         }
+
         return null;
     }
 
