@@ -3,6 +3,7 @@
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Artryazanov\LaravelSteamAppsDb\Database\Factories\SteamAppFactory;
+use Artryazanov\LaravelSteamAppsDb\Enums\SteamAppType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,15 +23,19 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $last_news_update When the news data was last loaded from Steam
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read SteamAppDetail|null $detail
- * @property-read SteamAppRequirement[] $requirements
- * @property-read SteamAppScreenshot[] $screenshots
- * @property-read SteamAppMovie[] $movies
- * @property-read SteamAppCategory[] $categories
- * @property-read SteamAppGenre[] $genres
- * @property-read SteamAppDeveloper[] $developers
- * @property-read SteamAppPublisher[] $publishers
- * @property-read SteamAppPriceInfo|null $priceInfo
+ * @property-read SteamAppDetail|null $detail The detailed Steam app information for this app
+ * @property-read SteamAppRequirement[] $requirements The requirements for this app
+ * @property-read SteamAppScreenshot[] $screenshots The screenshots for this app
+ * @property-read SteamAppMovie[] $movies The movies for this app
+ * @property-read SteamAppCategory[] $categories The categories for this app
+ * @property-read SteamAppGenre[] $genres The genres for this app
+ * @property-read SteamAppDeveloper[] $developers The developers for this app
+ * @property-read SteamAppPublisher[] $publishers The publishers for this app
+ * @property-read SteamAppPriceInfo|null $priceInfo The price information for this app
+ * @property-read SteamAppNews[] $news The news items for this app
+ * @property-read string $headerImage URL to the header image of the Steam application
+ * @property-read string|null $libraryImage URL to the library image of the Steam application
+ * @property-read string $steamAppUrl URL to the Steam store page of the application
  *
  * @method static Builder|SteamApp newModelQuery()
  * @method static Builder|SteamApp newQuery()
@@ -160,5 +165,32 @@ class SteamApp extends Model
     public function news(): HasMany
     {
         return $this->hasMany(SteamAppNews::class, 'steam_app_id', 'id');
+    }
+
+    /**
+     * Get the header image URL for the Steam application.
+     */
+    public function getHeaderImageAttribute(): string
+    {
+        return "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$this->appid}/header.jpg";
+    }
+
+    /**
+     * Get the URL for the library image of the Steam application.
+     */
+    public function getLibraryImageAttribute(): ?string
+    {
+        if ($this?->detail->type === SteamAppType::GAME->value) {
+            return "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$this->appid}/library_600x900.jpg";
+        }
+        return null;
+    }
+
+    /**
+     * Generate the URL to the Steam store page of the application.
+     */
+    public function getSteamAppUrlAttribute(): string
+    {
+        return "https://store.steampowered.com/app/{$this->appid}";
     }
 }
