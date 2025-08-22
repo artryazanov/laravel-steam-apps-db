@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $short_description Short description of the game
  * @property string|null $supported_languages Supported languages
  * @property string|null $header_image URL to the header image
+ * @property string|null $library_image URL to the library image 600x900
  * @property string|null $capsule_image URL to the capsule image
  * @property string|null $capsule_imagev5 URL to the capsule image v5
  * @property string|null $website Game website URL
@@ -57,6 +58,7 @@ class SteamAppDetail extends Model
         'short_description',
         'supported_languages',
         'header_image',
+        'library_image',
         'capsule_image',
         'capsule_imagev5',
         'website',

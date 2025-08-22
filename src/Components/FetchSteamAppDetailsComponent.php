@@ -98,6 +98,9 @@ class FetchSteamAppDetailsComponent
                     continue;
                 }
 
+                // Resolve library image URL and inject into details
+                $details['library_image'] = $this->resolveLibraryImageUrl($app->appid);
+
                 // Store details in a database
                 DB::beginTransaction();
                 try {
@@ -195,6 +198,32 @@ class FetchSteamAppDetailsComponent
     }
 
     /**
+     * Check if the library image exists for given appid and return its URL or null.
+     */
+    private function resolveLibraryImageUrl(int $appid): ?string
+    {
+        $url = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$appid}/library_600x900.jpg";
+        try {
+            $response = Http::timeout(5)->connectTimeout(3)->send('HEAD', $url);
+            if ($response->ok()) {
+                return $url;
+            }
+
+            // Some servers may not allow HEAD; try GET as a fallback
+            if ($response->status() === 405) {
+                $getResponse = Http::timeout(5)->connectTimeout(3)->get($url);
+                if ($getResponse->ok()) {
+                    return $url;
+                }
+            }
+        } catch (Exception $e) {
+            // Ignore network errors and return null
+        }
+
+        return null;
+    }
+
+    /**
      * Store Steam app details in the database.
      */
     private function storeSteamAppDetails(SteamApp $app, array $details): void
@@ -233,6 +262,7 @@ class FetchSteamAppDetailsComponent
                 'short_description' => $details['short_description'] ?? null,
                 'supported_languages' => $details['supported_languages'] ?? null,
                 'header_image' => $details['header_image'] ?? null,
+                'library_image' => $details['library_image'] ?? null,
                 'capsule_image' => $details['capsule_image'] ?? null,
                 'capsule_imagev5' => $details['capsule_imagev5'] ?? null,
                 'website' => $details['website'] ?? null,

@@ -36,6 +36,7 @@ class SteamAppDetailFactory extends Factory
             'short_description' => $this->faker->sentence,
             'supported_languages' => 'English, French, German',
             'header_image' => $this->faker->imageUrl(460, 215),
+            'library_image' => $this->faker->optional()->imageUrl(600, 900),
             'capsule_image' => $this->faker->imageUrl(231, 87),
             'capsule_imagev5' => $this->faker->imageUrl(184, 69),
             'website' => $this->faker->url,
