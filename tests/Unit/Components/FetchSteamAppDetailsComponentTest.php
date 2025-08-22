@@ -373,6 +373,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
                     ],
                 ],
             ]),
+            'shared.akamai.steamstatic.com/*' => Http::response('', 404),
             // Any other request will return a failure response
             '*' => Http::response([
                 'success' => false,
@@ -443,6 +444,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
                     ],
                 ],
             ]),
+            'shared.akamai.steamstatic.com/*' => Http::response('', 404),
         ]);
 
         // Execute
@@ -501,6 +503,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
                     ],
                 ],
             ]),
+            'shared.akamai.steamstatic.com/*' => Http::response('', 404),
         ]);
 
         // Execute

@@ -97,6 +97,7 @@ class FetchSteamAppDetailsCommandTest extends TestCase
                     ],
                 ],
             ]),
+            'shared.akamai.steamstatic.com/*' => Http::response('', 404),
             // Mock responses for other apps as needed
             '*' => Http::response([
                 'success' => false,
