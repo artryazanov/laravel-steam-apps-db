@@ -6,12 +6,8 @@ use Artryazanov\LaravelSteamAppsDb\Components\FetchSteamAppNewsComponent;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppNews;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
-use Carbon\Carbon;
-use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Mockery;
 use ReflectionMethod;
 
 class FetchSteamAppNewsComponentTest extends TestCase

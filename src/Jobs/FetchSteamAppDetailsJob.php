@@ -8,7 +8,7 @@ class FetchSteamAppDetailsJob extends FetchSteamAppBasicJob
 {
     protected function doJob(): void
     {
-        $component = new FetchSteamAppDetailsComponent();
+        $component = new FetchSteamAppDetailsComponent;
         $component->fetchSteamAppDetails((string) $this->appid);
     }
 }

@@ -8,7 +8,7 @@ class FetchSteamAppNewsJob extends FetchSteamAppBasicJob
 {
     protected function doJob(): void
     {
-        $component = new FetchSteamAppNewsComponent();
+        $component = new FetchSteamAppNewsComponent;
         $component->fetchSteamAppNews((string) $this->appid);
     }
 }
