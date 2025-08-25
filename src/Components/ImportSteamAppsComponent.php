@@ -91,7 +91,6 @@ class ImportSteamAppsComponent
                     try {
                         FetchSteamAppDetailsJob::dispatch((int) $steamApp->appid);
                         FetchSteamAppNewsJob::dispatch((int) $steamApp->appid);
-                        $command->line("Dispatched jobs for appid {$steamApp->appid}");
                     } catch (Exception $e) {
                         $command->error("Failed to dispatch jobs for appid {$steamApp->appid}: {$e->getMessage()}");
                     }
