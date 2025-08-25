@@ -36,7 +36,9 @@ abstract class FetchSteamAppBasicJob implements ShouldQueue
     public function handle(): void
     {
         $key = 'job:laravel-steam-apps-db-jobs:lock';
-        $executed = RateLimiter::attempt($key, 1, function () {$this->doJob();}, 1);
+        $executed = RateLimiter::attempt($key, 1, function () {
+            $this->doJob();
+        }, 1);
         if (! $executed) {
             $this->release(1);
         }

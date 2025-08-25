@@ -22,7 +22,7 @@ class FetchSteamAppNewsComponent
     /**
      * Fetch the latest news for Steam apps and store them in the database.
      *
-     * @param  string $appid  Specific Steam app ID to fetch news for
+     * @param  string  $appid  Specific Steam app ID to fetch news for
      */
     public function fetchSteamAppNews(string $appid): void
     {
