@@ -2,7 +2,6 @@
 
 namespace Artryazanov\LaravelSteamAppsDb\Components;
 
-use Artryazanov\LaravelSteamAppsDb\Console\NullCommand;
 use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppCategory;
@@ -16,8 +15,6 @@ use Artryazanov\LaravelSteamAppsDb\Models\SteamAppRequirement;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppScreenshot;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
@@ -33,142 +30,49 @@ class FetchSteamAppDetailsComponent
     /**
      * Fetch detailed information about Steam games and store it in the database.
      *
-     * @param  int  $limit  Number of apps to process
-     * @param  string|null  $appid  Optional Steam application ID to fetch details for a specific app
-     * @param  Command|null  $command  The command instance for output
+     * @param  string  $appid  Steam application ID to fetch details for a specific app
      */
-    public function fetchSteamAppDetails(int $limit, ?string $appid = null, ?Command $command = null): void
+    public function fetchSteamAppDetails(string $appid): void
     {
-        if (empty($command)) {
-            $command = new NullCommand;
+        // Get the specific app by appid
+        $app = SteamApp::where('appid', $appid)->first();
+
+        if (! $app) {
+            return;
         }
 
-        if ($appid) {
-            $command->info("Starting to fetch Steam game details for specific appid: {$appid}...");
+        try {
+            // Fetch details from Steam API
+            $details = $this->fetchAppDetailsFromApi($app->appid);
 
-            // Get the specific app by appid
-            $app = SteamApp::where('appid', $appid)->first();
+            // Update the last_details_update field in the SteamApp model
+            $app->update(['last_details_update' => Carbon::now()]);
 
-            if (! $app) {
-                $command->error("No Steam app found with appid: {$appid}");
+            // Resolve library image URL and inject into details
+            $details['library_image'] = $this->resolveLibraryImageUrl($app->appid);
+            // Resolve library hero image URL and inject into details
+            $details['library_hero_image'] = $this->resolveLibraryHeroImageUrl($app->appid);
 
-                return;
-            }
-
-            $appsToProcess = collect([$app]);
-            $totalApps = 1;
-        } else {
-            $command->info("Starting to fetch Steam game details (count: {$limit})...");
-
-            // Get SteamApp records to process based on priority
-            $appsToProcess = $this->getSteamAppsToProcess($limit);
-            $totalApps = count($appsToProcess);
-
-            if ($totalApps === 0) {
-                $command->info('No Steam apps to process.');
-
-                return;
-            }
-        }
-
-        $command->info("Found {$totalApps} Steam apps to process.");
-
-        $processed = 0;
-        $success = 0;
-        $failed = 0;
-
-        foreach ($appsToProcess as $index => $app) {
-            $currentIndex = $index + 1;
-            $command->line('');
-            $command->info("Processing app {$currentIndex} of {$totalApps}: {$app->name} (appid: {$app->appid})");
-
+            // Store details in a database
+            DB::beginTransaction();
             try {
-                // Fetch details from Steam API
-                $details = $this->fetchAppDetailsFromApi($app->appid, $command);
-
-                // Update the last_details_update field in the SteamApp model
-                $app->update(['last_details_update' => Carbon::now()]);
-
-                if (! $details) {
-                    $command->warn("No details found for app {$app->name} (appid: {$app->appid})");
-                    $failed++;
-                    $command->info('Waiting 2 seconds before the next request...');
-                    sleep(2);
-
-                    continue;
-                }
-
-                // Resolve library image URL and inject into details
-                $details['library_image'] = $this->resolveLibraryImageUrl($app->appid);
-                // Resolve library hero image URL and inject into details
-                $details['library_hero_image'] = $this->resolveLibraryHeroImageUrl($app->appid);
-
-                // Store details in a database
-                DB::beginTransaction();
-                try {
-                    $this->storeSteamAppDetails($app, $details);
-                    DB::commit();
-                    $success++;
-                    $command->info("Successfully stored details for app {$app->name} (appid: {$app->appid})");
-                } catch (Exception $e) {
-                    DB::rollBack();
-                    $errorMessage = "Failed to store details for app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
-                    $command->error($errorMessage);
-                    report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
-                    $failed++;
-                }
+                $this->storeSteamAppDetails($app, $details);
+                DB::commit();
             } catch (Exception $e) {
-                $errorMessage = "Error processing app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
-                $command->error($errorMessage);
+                DB::rollBack();
+                $errorMessage = "Failed to store details for app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
                 report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
-                $failed++;
             }
-
-            $processed++;
-
-            // Add a 2-second delay between requests to avoid hitting rate limits
-            if ($processed < $totalApps) {
-                $command->info('Waiting 2 seconds before the next request...');
-                sleep(2);
-            }
+        } catch (Exception $e) {
+            $errorMessage = "Error processing app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
+            report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
         }
-
-        $command->info("Fetch completed: {$success} apps processed successfully, {$failed} apps failed");
-    }
-
-    /**
-     * Get SteamApp records to process
-     */
-    private function getSteamAppsToProcess(int $limit): Collection
-    {
-        $oneYearAgo = Carbon::now()->subYear();
-
-        $appsWithoutDetails = SteamApp::query()
-            ->whereNull('last_details_update')
-            ->take($limit)
-            ->get();
-
-        if ($appsWithoutDetails->count() >= $limit) {
-            return $appsWithoutDetails;
-        }
-
-        $remainingLimit = $limit - $appsWithoutDetails->count();
-
-        $appsWithOldDetails = SteamApp::query()
-            ->whereNotNull('last_details_update')
-            ->where('last_details_update', '<', $oneYearAgo)
-            ->take($remainingLimit)
-            ->get();
-
-        return $appsWithoutDetails->concat($appsWithOldDetails->all());
     }
 
     /**
      * Fetch details for a Steam app from the Steam API.
-     *
-     * @param  Command  $command  The command instance for output
      */
-    private function fetchAppDetailsFromApi(int $appid, Command $command): ?array
+    private function fetchAppDetailsFromApi(int $appid): ?array
     {
         $response = Http::get(self::STEAM_API_URL, [
             'appids' => $appid,
@@ -177,22 +81,16 @@ class FetchSteamAppDetailsComponent
         ]);
 
         if (! $response->successful()) {
-            $command->error("Failed to fetch details for appid {$appid}: ".$response->status());
-
             return null;
         }
 
         $data = $response->json();
 
         if (! isset($data[$appid]['success']) || ! $data[$appid]['success']) {
-            $command->warn("No success response for appid {$appid}");
-
             return null;
         }
 
         if (! isset($data[$appid]['data'])) {
-            $command->warn("No data found for appid {$appid}");
-
             return null;
         }
 

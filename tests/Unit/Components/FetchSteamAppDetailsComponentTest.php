@@ -7,35 +7,13 @@ use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppMovie;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppScreenshot;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
-use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Mockery;
 use ReflectionMethod;
 
 class FetchSteamAppDetailsComponentTest extends TestCase
 {
     use RefreshDatabase;
-
-    /**
-     * Mock command for testing
-     */
-    private $mockCommand;
-
-    /**
-     * Set up the test environment.
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Create a mock command
-        $this->mockCommand = Mockery::mock(Command::class);
-        $this->mockCommand->shouldReceive('info')->andReturnSelf();
-        $this->mockCommand->shouldReceive('line')->andReturnSelf();
-        $this->mockCommand->shouldReceive('warn')->andReturnSelf();
-        $this->mockCommand->shouldReceive('error')->andReturnSelf();
-    }
 
     /**
      * Test that the storeScreenshots method correctly handles screenshots.
@@ -384,7 +362,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
         $component = new FetchSteamAppDetailsComponent;
 
         // Call the fetchSteamAppDetails method with a specific appid
-        $component->fetchSteamAppDetails(10, '123456', $this->mockCommand);
+        $component->fetchSteamAppDetails('123456');
 
         // Assert that the details were stored for the target app
         $this->assertDatabaseHas('steam_app_details', [
@@ -449,7 +427,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
 
         // Execute
         $component = new FetchSteamAppDetailsComponent;
-        $component->fetchSteamAppDetails(1, '123456', $this->mockCommand);
+        $component->fetchSteamAppDetails('123456');
 
         // Assert DB stored with release_date null and coming_soon true
         $this->assertDatabaseHas('steam_app_details', [
@@ -508,7 +486,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
 
         // Execute
         $component = new FetchSteamAppDetailsComponent;
-        $component->fetchSteamAppDetails(1, '654321', $this->mockCommand);
+        $component->fetchSteamAppDetails('654321');
 
         // Assert DB stored with release_date null and coming_soon false
         $this->assertDatabaseHas('steam_app_details', [
@@ -561,7 +539,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
         ]);
 
         $component = new FetchSteamAppDetailsComponent;
-        $component->fetchSteamAppDetails(1, (string) $appid, $this->mockCommand);
+        $component->fetchSteamAppDetails((string) $appid);
 
         $this->assertDatabaseHas('steam_app_details', [
             'steam_app_id' => $app->id,
@@ -606,7 +584,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
         ]);
 
         $component = new FetchSteamAppDetailsComponent;
-        $component->fetchSteamAppDetails(1, (string) $appid, $this->mockCommand);
+        $component->fetchSteamAppDetails((string) $appid);
 
         $this->assertDatabaseHas('steam_app_details', [
             'steam_app_id' => $app->id,

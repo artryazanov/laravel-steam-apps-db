@@ -16,7 +16,7 @@ Laravel Steam Apps DB provides a set of tools to work with Steam application dat
 - Retrieve and store news articles for Steam games
 - Access Steam app data through Eloquent models
 
-The package handles all the database schema creation and provides console commands to interact with the Steam API.
+The package handles all the database schema creation and provides a console command to import apps and queued jobs to fetch details and news from the Steam API.
 
 ## Installation
 
@@ -45,9 +45,9 @@ php artisan migrate
 
 ### Console Commands
 
-The package provides three main console commands:
+The package provides one main console command:
 
-#### 1. Import Steam Apps
+#### Import Steam Apps
 
 This command imports basic information about all Steam applications from the Steam API.
 
@@ -57,63 +57,35 @@ php artisan steam:import-apps
 
 This will fetch a list of all Steam applications and store them in the `steam_apps` table.
 
-#### 2. Fetch Steam App Details
+After saving each app, this command dispatches queued jobs to fetch the app's details and news asynchronously via Laravel's queue.
 
-This command fetches detailed information about Steam games and stores it in the database.
+### Queue and Jobs
 
-```bash
-php artisan steam:fetch-app-details [count] [--appid=<appid>]
-```
+Starting from the current version, fetching details and news is performed by queued jobs that are dispatched per app during import:
 
-Parameters:
-- `count` (optional): Number of apps to process (default: 10)
-- `--appid` (optional): Steam application ID to fetch details for a specific app
+- `Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppDetailsJob`
+- `Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob`
 
-The command prioritizes:
-1. Apps that have never had details fetched
-2. Apps with details older than a year
-
-If the `--appid` option is provided, the command will only fetch details for the specified app, ignoring the count parameter and prioritization logic.
-
-Examples:
-```bash
-# Fetch details for 50 Steam apps based on priority
-php artisan steam:fetch-app-details 50
-
-# Fetch details for a specific Steam app with ID 570 (DOTA 2)
-php artisan steam:fetch-app-details --appid=570
-```
-
-This will fetch detailed information for the specified Steam app(s) and store it in various tables.
-
-#### 3. Fetch Steam App News
-
-This command fetches the latest news for Steam apps and stores them in the database.
+To process the jobs, make sure you run a queue worker in your application environment:
 
 ```bash
-php artisan steam:fetch-app-news [count] [--appid=<appid>]
+php artisan queue:work
 ```
 
-Parameters:
-- `count` (optional): Number of apps to process (default: 10)
-- `--appid` (optional): Steam application ID to fetch news for a specific app
+You can configure the queue connection (sync, database, redis, etc.) via your `.env` and `config/queue.php`. For production, use a supervisor or a process manager to keep the worker running.
 
-The command prioritizes:
-1. Apps that have never had news fetched
-2. Apps with news older than a month
+Manual dispatch examples (optional):
 
-If the `--appid` option is provided, the command will only fetch news for the specified app, ignoring the count parameter and prioritization logic.
+```php
+use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppDetailsJob;
+use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob;
 
-Examples:
-```bash
-# Fetch news for 20 Steam apps based on priority
-php artisan steam:fetch-app-news 20
-
-# Fetch news for a specific Steam app with ID 570 (DOTA 2)
-php artisan steam:fetch-app-news --appid=570
+// Dispatch jobs for a specific appid (e.g., 570 - DOTA 2)
+FetchSteamAppDetailsJob::dispatch(570);
+FetchSteamAppNewsJob::dispatch(570);
 ```
 
-This will fetch the latest news for the specified Steam app(s) and store it in the `steam_app_news` table.
+Note: Previous console commands `steam:fetch-app-details` and `steam:fetch-app-news` have been replaced by the queued jobs and are no longer required.
 
 ### Models
 

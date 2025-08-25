@@ -2,14 +2,11 @@
 
 namespace Artryazanov\LaravelSteamAppsDb\Components;
 
-use Artryazanov\LaravelSteamAppsDb\Console\NullCommand;
 use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppNews;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
@@ -25,139 +22,44 @@ class FetchSteamAppNewsComponent
     /**
      * Fetch the latest news for Steam apps and store them in the database.
      *
-     * @param  int  $limit  Number of apps to process
-     * @param  int|null  $appid  Specific Steam app ID to fetch news for
-     * @param  Command|null  $command  The command instance for output
+     * @param  string $appid  Specific Steam app ID to fetch news for
      */
-    public function fetchSteamAppNews(int $limit, ?int $appid = null, ?Command $command = null): void
+    public function fetchSteamAppNews(string $appid): void
     {
-        if (empty($command)) {
-            $command = new NullCommand;
+        // Get the specific app by appid
+        $app = SteamApp::where('appid', $appid)->first();
+
+        if (! $app) {
+            return;
         }
 
-        if ($appid) {
-            $command->info("Starting to fetch news for specific Steam app (appid: {$appid})...");
+        try {
+            // Fetch news from Steam API
+            $news = $this->fetchNewsFromApi($app->appid);
 
-            // Get the specific app by appid
-            $app = SteamApp::where('appid', $appid)->first();
+            // Update the last_news_update field in the SteamApp model
+            $app->update(['last_news_update' => Carbon::now()]);
 
-            if (! $app) {
-                $command->error("Steam app with appid {$appid} not found in the database.");
-
-                return;
-            }
-
-            $appsToProcess = collect([$app]);
-            $totalApps = 1;
-
-            $command->info("Found Steam app: {$app->name} (appid: {$app->appid})");
-        } else {
-            $command->info("Starting to fetch Steam app news (count: {$limit})...");
-
-            // Get SteamApp records to process based on priority
-            $appsToProcess = $this->getSteamAppsToProcess($limit);
-            $totalApps = count($appsToProcess);
-
-            if ($totalApps === 0) {
-                $command->info('No Steam apps to process.');
-
-                return;
-            }
-
-            $command->info("Found {$totalApps} Steam apps to process.");
-        }
-
-        $processed = 0;
-        $success = 0;
-        $failed = 0;
-
-        foreach ($appsToProcess as $index => $app) {
-            $currentIndex = $index + 1;
-            $command->line('');
-            $command->info("Processing app {$currentIndex} of {$totalApps}: {$app->name} (appid: {$app->appid})");
-
+            // Store news in the database
+            DB::beginTransaction();
             try {
-                // Fetch news from Steam API
-                $news = $this->fetchNewsFromApi($app->appid, $command);
-
-                // Update the last_news_update field in the SteamApp model
-                $app->update(['last_news_update' => Carbon::now()]);
-
-                if (! $news || empty($news['newsitems'])) {
-                    $command->warn("No news found for app {$app->name} (appid: {$app->appid})");
-                    $failed++;
-                    $command->info('Waiting 2 seconds before the next request...');
-                    sleep(2);
-
-                    continue;
-                }
-
-                // Store news in the database
-                DB::beginTransaction();
-                try {
-                    $this->storeSteamAppNews($app, $news['newsitems']);
-                    DB::commit();
-                    $success++;
-                    $command->info("Successfully stored news for app {$app->name} (appid: {$app->appid})");
-                } catch (Exception $e) {
-                    DB::rollBack();
-                    $errorMessage = "Failed to store news for app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
-                    $command->error($errorMessage);
-                    report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
-                    $failed++;
-                }
+                $this->storeSteamAppNews($app, $news['newsitems']);
+                DB::commit();
             } catch (Exception $e) {
-                $errorMessage = "Error processing app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
-                $command->error($errorMessage);
+                DB::rollBack();
+                $errorMessage = "Failed to store news for app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
                 report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
-                $failed++;
             }
-
-            $processed++;
-
-            // Add a 2-second delay between requests to avoid hitting rate limits
-            if ($processed < $totalApps) {
-                $command->info('Waiting 2 seconds before the next request...');
-                sleep(2);
-            }
+        } catch (Exception $e) {
+            $errorMessage = "Error processing app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
+            report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
         }
-
-        $command->info("Fetch completed: {$success} apps processed successfully, {$failed} apps failed");
-    }
-
-    /**
-     * Get SteamApp records to process
-     */
-    private function getSteamAppsToProcess(int $limit): Collection
-    {
-        $oneMonthAgo = Carbon::now()->subMonth();
-
-        $appsWithoutNews = SteamApp::query()
-            ->whereNull('last_news_update')
-            ->take($limit)
-            ->get();
-
-        if ($appsWithoutNews->count() >= $limit) {
-            return $appsWithoutNews;
-        }
-
-        $remainingLimit = $limit - $appsWithoutNews->count();
-
-        $appsWithOldNews = SteamApp::query()
-            ->whereNotNull('last_news_update')
-            ->where('last_news_update', '<', $oneMonthAgo)
-            ->take($remainingLimit)
-            ->get();
-
-        return $appsWithoutNews->concat($appsWithOldNews->all());
     }
 
     /**
      * Fetch news for a Steam app from the Steam API.
-     *
-     * @param  Command  $command  The command instance for output
      */
-    private function fetchNewsFromApi(int $appid, Command $command): ?array
+    private function fetchNewsFromApi(int $appid): ?array
     {
         $response = Http::get(self::STEAM_API_URL, [
             'appid' => $appid,
@@ -167,16 +69,12 @@ class FetchSteamAppNewsComponent
         ]);
 
         if (! $response->successful()) {
-            $command->error("Failed to fetch news for appid {$appid}: ".$response->status());
-
             return null;
         }
 
         $data = $response->json();
 
         if (! isset($data['appnews']) || ! isset($data['appnews']['newsitems'])) {
-            $command->warn("No news data found for appid {$appid}");
-
             return null;
         }
 

@@ -2,9 +2,12 @@
 
 namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Console;
 
+use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppDetailsJob;
+use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 
 class ImportSteamAppsCommandTest extends TestCase
@@ -26,6 +29,9 @@ class ImportSteamAppsCommandTest extends TestCase
             ], 200),
         ]);
 
+        // Fake bus to capture dispatched jobs
+        Bus::fake();
+
         // Run the command
         $this->artisan('steam:import-apps')
             ->expectsOutputToContain('Starting import of Steam apps...')
@@ -37,6 +43,10 @@ class ImportSteamAppsCommandTest extends TestCase
             ->expectsOutputToContain('Import completed: 3 apps created, 0 apps updated')
             ->expectsOutputToContain('Import of Steam apps completed!')
             ->assertSuccessful();
+
+        // Assert jobs were dispatched for each app
+        Bus::assertDispatchedTimes(FetchSteamAppDetailsJob::class, 3);
+        Bus::assertDispatchedTimes(FetchSteamAppNewsJob::class, 3);
 
         // Assert that the apps were created in the database
         $this->assertDatabaseHas('steam_apps', [
@@ -84,10 +94,17 @@ class ImportSteamAppsCommandTest extends TestCase
             ], 200),
         ]);
 
+        // Fake bus to capture dispatched jobs
+        Bus::fake();
+
         // Run the command
         $this->artisan('steam:import-apps')
             ->expectsOutputToContain('Import completed: 1 apps created, 2 apps updated')
             ->assertSuccessful();
+
+        // Assert jobs were dispatched for each app (3 total)
+        Bus::assertDispatchedTimes(FetchSteamAppDetailsJob::class, 3);
+        Bus::assertDispatchedTimes(FetchSteamAppNewsJob::class, 3);
 
         // Assert that the apps were updated in the database
         $this->assertDatabaseHas('steam_apps', [
@@ -113,6 +130,9 @@ class ImportSteamAppsCommandTest extends TestCase
             ], 429),
         ]);
 
+        // Fake bus to capture dispatched jobs
+        Bus::fake();
+
         // Run the command
         $this->artisan('steam:import-apps')
             ->expectsOutputToContain('Starting import of Steam apps...')
@@ -120,6 +140,9 @@ class ImportSteamAppsCommandTest extends TestCase
             ->expectsOutputToContain('Failed to fetch data from Steam API: 429')
             ->expectsOutputToContain('Import of Steam apps completed!')
             ->assertSuccessful();
+
+        // No jobs should be dispatched on API error
+        Bus::assertNothingDispatched();
 
         // Assert that no apps were created in the database
         $this->assertDatabaseCount('steam_apps', 0);
@@ -140,6 +163,9 @@ class ImportSteamAppsCommandTest extends TestCase
             ], 200),
         ]);
 
+        // Fake bus to capture dispatched jobs
+        Bus::fake();
+
         // Run the command
         $this->artisan('steam:import-apps')
             ->expectsOutputToContain('Starting import of Steam apps...')
@@ -147,6 +173,9 @@ class ImportSteamAppsCommandTest extends TestCase
             ->expectsOutputToContain('Invalid response format from Steam API')
             ->expectsOutputToContain('Import of Steam apps completed!')
             ->assertSuccessful();
+
+        // No jobs should be dispatched on invalid response
+        Bus::assertNothingDispatched();
 
         // Assert that no apps were created in the database
         $this->assertDatabaseCount('steam_apps', 0);
@@ -165,12 +194,18 @@ class ImportSteamAppsCommandTest extends TestCase
             throw new \Exception('Test exception');
         });
 
+        // Fake bus to capture dispatched jobs
+        Bus::fake();
+
         // Run the command
         $this->artisan('steam:import-apps')
             ->expectsOutputToContain('Starting import of Steam apps...')
             ->expectsOutputToContain('An error occurred during import: Test exception')
             ->expectsOutputToContain('Import of Steam apps completed!')
             ->assertSuccessful();
+
+        // No jobs should be dispatched on exception
+        Bus::assertNothingDispatched();
 
         // Assert that no apps were created in the database
         $this->assertDatabaseCount('steam_apps', 0);
@@ -192,12 +227,19 @@ class ImportSteamAppsCommandTest extends TestCase
             ], 200),
         ]);
 
+        // Fake bus to capture dispatched jobs
+        Bus::fake();
+
         // Run the command
         $this->artisan('steam:import-apps')
             ->expectsOutputToContain('Found 4 apps in the Steam API response')
             ->expectsOutputToContain('Processed 2 of 4 apps')  // Only 2 processed because 2 have empty names
             ->expectsOutputToContain('Import completed: 2 apps created, 0 apps updated')
             ->assertSuccessful();
+
+        // Assert jobs were dispatched only for valid apps (2)
+        Bus::assertDispatchedTimes(FetchSteamAppDetailsJob::class, 2);
+        Bus::assertDispatchedTimes(FetchSteamAppNewsJob::class, 2);
 
         // Assert that only apps with non-empty names were created
         $this->assertDatabaseHas('steam_apps', [

@@ -19,26 +19,6 @@ class FetchSteamAppNewsComponentTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * Mock command for testing
-     */
-    private $mockCommand;
-
-    /**
-     * Set up the test environment.
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Create a mock command
-        $this->mockCommand = Mockery::mock(Command::class);
-        $this->mockCommand->shouldReceive('info')->andReturnSelf();
-        $this->mockCommand->shouldReceive('line')->andReturnSelf();
-        $this->mockCommand->shouldReceive('warn')->andReturnSelf();
-        $this->mockCommand->shouldReceive('error')->andReturnSelf();
-    }
-
-    /**
      * Test that the storeSteamAppNews method correctly handles news items.
      */
     public function test_store_steam_app_news(): void
@@ -227,145 +207,13 @@ class FetchSteamAppNewsComponentTest extends TestCase
         $component = new FetchSteamAppNewsComponent;
         $method = new ReflectionMethod($component, 'fetchNewsFromApi');
         $method->setAccessible(true);
-        $result = $method->invoke($component, 570, $this->mockCommand);
+        $result = $method->invoke($component, 570);
 
         // Verify the result
         $this->assertIsArray($result);
         $this->assertEquals(570, $result['appid']);
         $this->assertCount(1, $result['newsitems']);
         $this->assertEquals('Test News', $result['newsitems'][0]['title']);
-    }
-
-    /**
-     * Test that the getSteamAppsToProcess method correctly returns apps to process
-     * based on their last_news_update status and the specified limit.
-     */
-    public function test_get_steam_apps_to_process(): void
-    {
-        // Create an instance of the component and get access to the private method
-        $component = new FetchSteamAppNewsComponent;
-        $method = new ReflectionMethod($component, 'getSteamAppsToProcess');
-        $method->setAccessible(true);
-
-        // Define the one month ago date that's used in the method
-        $oneMonthAgo = Carbon::now()->subMonth();
-
-        // Test Case 1: No apps in the database
-        // Should return an empty collection
-        $result = $method->invoke($component, 5);
-        $this->assertInstanceOf(Collection::class, $result);
-        $this->assertCount(0, $result);
-
-        // Test Case 2: Only apps with recent news (less than a month old)
-        // Should return an empty collection as these aren't processed
-        SteamApp::factory()->count(3)->create([
-            'last_news_update' => Carbon::now()->subDays(5),
-        ]);
-
-        $result = $method->invoke($component, 5);
-        $this->assertCount(0, $result);
-
-        // Test Case 3: Only apps with no news
-        // Should return all apps with no news up to the limit
-        SteamApp::query()->delete(); // Clear previous test data
-
-        $appsWithNoNews = SteamApp::factory()->count(5)->create([
-            'last_news_update' => null,
-        ]);
-
-        // Test with limit less than available apps
-        $result = $method->invoke($component, 3);
-        $this->assertCount(3, $result);
-
-        // Test with limit equal to available apps
-        $result = $method->invoke($component, 5);
-        $this->assertCount(5, $result);
-
-        // Test with limit greater than available apps
-        $result = $method->invoke($component, 10);
-        $this->assertCount(5, $result);
-
-        // Test Case 4: Only apps with old news
-        // Should return all apps with old news up to the limit
-        SteamApp::query()->delete(); // Clear previous test data
-
-        $appsWithOldNews = SteamApp::factory()->count(5)->create([
-            'last_news_update' => $oneMonthAgo->subDays(5), // Older than one month
-        ]);
-
-        $result = $method->invoke($component, 3);
-        $this->assertCount(3, $result);
-
-        // Test Case 5: Mix of apps with no news, old news, and recent news
-        // Should prioritize apps with no news, then apps with old news
-        SteamApp::query()->delete(); // Clear previous test data
-
-        // Create 3 apps with no news (highest priority)
-        $appsWithNoNews = SteamApp::factory()->count(3)->create([
-            'last_news_update' => null,
-        ]);
-
-        // Create 3 apps with old news (medium priority)
-        $appsWithOldNews = SteamApp::factory()->count(3)->create([
-            'last_news_update' => $oneMonthAgo->subDays(5), // Older than one month
-        ]);
-
-        // Create 3 apps with recent news (not processed)
-        $appsWithRecentNews = SteamApp::factory()->count(3)->create([
-            'last_news_update' => Carbon::now()->subDays(5), // Less than one month
-        ]);
-
-        // Test with limit less than apps with no news
-        $result = $method->invoke($component, 2);
-        $this->assertCount(2, $result);
-        // All results should be apps with no news
-        foreach ($result as $app) {
-            $this->assertNull($app->last_news_update);
-        }
-
-        // Test with limit equal to apps with no news
-        $result = $method->invoke($component, 3);
-        $this->assertCount(3, $result);
-        // All results should be apps with no news
-        foreach ($result as $app) {
-            $this->assertNull($app->last_news_update);
-        }
-
-        // Test with limit between (apps with no news) and (apps with no news + apps with old news)
-        $result = $method->invoke($component, 5);
-        $this->assertCount(5, $result);
-        // Should include all 3 apps with no news and 2 apps with old news
-        $appsWithNoNewsCount = 0;
-        $appsWithOldNewsCount = 0;
-
-        foreach ($result as $app) {
-            if ($app->last_news_update === null) {
-                $appsWithNoNewsCount++;
-            } elseif ($app->last_news_update < $oneMonthAgo) {
-                $appsWithOldNewsCount++;
-            }
-        }
-
-        $this->assertEquals(3, $appsWithNoNewsCount);
-        $this->assertEquals(2, $appsWithOldNewsCount);
-
-        // Test with limit greater than (apps with no news + apps with old news)
-        $result = $method->invoke($component, 10);
-        $this->assertCount(6, $result); // Should only return 6 apps (3 with no news + 3 with old news)
-
-        $appsWithNoNewsCount = 0;
-        $appsWithOldNewsCount = 0;
-
-        foreach ($result as $app) {
-            if ($app->last_news_update === null) {
-                $appsWithNoNewsCount++;
-            } elseif ($app->last_news_update < $oneMonthAgo) {
-                $appsWithOldNewsCount++;
-            }
-        }
-
-        $this->assertEquals(3, $appsWithNoNewsCount);
-        $this->assertEquals(3, $appsWithOldNewsCount);
     }
 
     /**
@@ -404,7 +252,7 @@ class FetchSteamAppNewsComponentTest extends TestCase
 
         // Create an instance of the component and call the fetchSteamAppNews method
         $component = new FetchSteamAppNewsComponent;
-        $component->fetchSteamAppNews(1, null, $this->mockCommand);
+        $component->fetchSteamAppNews(570);
 
         // Verify that the news was stored
         $this->assertDatabaseHas('steam_app_news', [

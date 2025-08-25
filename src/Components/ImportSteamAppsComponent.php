@@ -4,6 +4,8 @@ namespace Artryazanov\LaravelSteamAppsDb\Components;
 
 use Artryazanov\LaravelSteamAppsDb\Console\NullCommand;
 use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
+use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppDetailsJob;
+use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Exception;
 use Illuminate\Console\Command;
@@ -83,6 +85,15 @@ class ImportSteamAppsComponent
                         $created++;
                     } else {
                         $updated++;
+                    }
+
+                    // Dispatch jobs to update details and news for this app
+                    try {
+                        FetchSteamAppDetailsJob::dispatch((int) $steamApp->appid);
+                        FetchSteamAppNewsJob::dispatch((int) $steamApp->appid);
+                        $command->line("Dispatched jobs for appid {$steamApp->appid}");
+                    } catch (Exception $e) {
+                        $command->error("Failed to dispatch jobs for appid {$steamApp->appid}: {$e->getMessage()}");
                     }
 
                     $processed++;
