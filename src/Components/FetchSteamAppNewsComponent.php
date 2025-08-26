@@ -58,6 +58,7 @@ class FetchSteamAppNewsComponent
 
     /**
      * Fetch news for a Steam app from the Steam API.
+     * @throws Exception
      */
     private function fetchNewsFromApi(int $appid): ?array
     {
@@ -69,13 +70,13 @@ class FetchSteamAppNewsComponent
         ]);
 
         if (! $response->successful()) {
-            return null;
+            throw new Exception("FetchNewsFromApi, Steam API response status: {$response->status()}");
         }
 
         $data = $response->json();
 
         if (! isset($data['appnews']) || ! isset($data['appnews']['newsitems'])) {
-            return null;
+            throw new Exception("FetchNewsFromApi, Steam API response body: {$response->body()}");
         }
 
         return $data['appnews'];

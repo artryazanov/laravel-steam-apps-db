@@ -71,6 +71,7 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Fetch details for a Steam app from the Steam API.
+     * @throws Exception
      */
     private function fetchAppDetailsFromApi(int $appid): ?array
     {
@@ -81,17 +82,13 @@ class FetchSteamAppDetailsComponent
         ]);
 
         if (! $response->successful()) {
-            return null;
+            throw new Exception("FetchAppDetailsFromApi, Steam API response status: {$response->status()}");
         }
 
         $data = $response->json();
 
-        if (! isset($data[$appid]['success']) || ! $data[$appid]['success']) {
-            return null;
-        }
-
-        if (! isset($data[$appid]['data'])) {
-            return null;
+        if (! isset($data[$appid]['success']) || ! $data[$appid]['success'] || ! isset($data[$appid]['data'])) {
+            throw new Exception("FetchAppDetailsFromApi, Steam API response body: {$response->body()}");
         }
 
         return $data[$appid]['data'];
