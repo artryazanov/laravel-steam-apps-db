@@ -10,7 +10,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\RateLimiter;
 
-abstract class FetchSteamAppBasicJob implements ShouldQueue, ShouldBeUnique
+abstract class FetchSteamAppBasicJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -36,7 +36,7 @@ abstract class FetchSteamAppBasicJob implements ShouldQueue, ShouldBeUnique
 
     public function uniqueId(): string
     {
-        return static::class . ':' . $this->appid;
+        return static::class.':'.$this->appid;
     }
 
     public function handle(): void
