@@ -58,6 +58,7 @@ class FetchSteamAppNewsComponent
 
     /**
      * Fetch news for a Steam app from the Steam API.
+     *
      * @throws Exception
      */
     private function fetchNewsFromApi(int $appid): ?array
