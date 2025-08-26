@@ -71,6 +71,7 @@ class FetchSteamAppDetailsComponent
 
     /**
      * Fetch details for a Steam app from the Steam API.
+     *
      * @throws Exception
      */
     private function fetchAppDetailsFromApi(int $appid): ?array
