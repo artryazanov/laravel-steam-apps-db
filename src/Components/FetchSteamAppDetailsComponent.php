@@ -30,7 +30,8 @@ class FetchSteamAppDetailsComponent
     /**
      * Fetch detailed information about Steam games and store it in the database.
      *
-     * @param string $appid Steam application ID to fetch details for a specific app
+     * @param  string  $appid  Steam application ID to fetch details for a specific app
+     *
      * @throws LaravelSteamAppsDbException
      */
     public function fetchSteamAppDetails(string $appid): void
