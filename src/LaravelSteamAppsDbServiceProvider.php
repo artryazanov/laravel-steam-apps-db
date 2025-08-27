@@ -12,7 +12,8 @@ class LaravelSteamAppsDbServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Register any bindings or services here
+        // Merge package configuration
+        $this->mergeConfigFrom(__DIR__.'/../config/laravel-steam-apps-db.php', 'laravel-steam-apps-db');
     }
 
     /**
@@ -28,6 +29,13 @@ class LaravelSteamAppsDbServiceProvider extends ServiceProvider
             $this->commands([
                 ImportSteamAppsCommand::class,
             ]);
+
+            // Publish configuration
+            $this->publishes([
+                __DIR__.'/../config/laravel-steam-apps-db.php' => function_exists('config_path')
+                    ? config_path('laravel-steam-apps-db.php')
+                    : base_path('config/laravel-steam-apps-db.php'),
+            ], 'laravel-steam-apps-db-config');
         }
     }
 }

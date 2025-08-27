@@ -42,11 +42,12 @@ abstract class FetchSteamAppBasicJob implements ShouldBeUnique, ShouldQueue
     public function handle(): void
     {
         $key = 'job:laravel-steam-apps-db-jobs:lock';
+        $decaySeconds = (int) config('laravel-steam-apps-db.decay_seconds', 2);
         $executed = RateLimiter::attempt($key, 1, function () {
             $this->doJob();
-        }, 1);
+        }, $decaySeconds);
         if (! $executed) {
-            $this->release(1);
+            $this->release($decaySeconds);
         }
     }
 
