@@ -30,7 +30,8 @@ class FetchSteamAppDetailsComponent
     /**
      * Fetch detailed information about Steam games and store it in the database.
      *
-     * @param  string  $appid  Steam application ID to fetch details for a specific app
+     * @param string $appid Steam application ID to fetch details for a specific app
+     * @throws LaravelSteamAppsDbException
      */
     public function fetchSteamAppDetails(string $appid): void
     {
@@ -61,11 +62,11 @@ class FetchSteamAppDetailsComponent
             } catch (Exception $e) {
                 DB::rollBack();
                 $errorMessage = "Failed to store details for app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
-                report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
+                throw new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e);
             }
         } catch (Exception $e) {
             $errorMessage = "Error processing app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
-            report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
+            throw new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e);
         }
     }
 

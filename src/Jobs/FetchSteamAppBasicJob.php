@@ -2,6 +2,7 @@
 
 namespace Artryazanov\LaravelSteamAppsDb\Jobs;
 
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -42,9 +43,13 @@ abstract class FetchSteamAppBasicJob implements ShouldBeUnique, ShouldQueue
     public function handle(): void
     {
         $key = 'job:laravel-steam-apps-db-jobs:lock';
-        $decaySeconds = (int) config('laravel-steam-apps-db.decay_seconds', 2);
+        $decaySeconds = (int) config('laravel-steam-apps-db.decay_seconds');
         $executed = RateLimiter::attempt($key, 1, function () {
-            $this->doJob();
+            try {
+                $this->doJob();
+            } catch (Exception $e) {
+                $this->fail($e);
+            }
         }, $decaySeconds);
         if (! $executed) {
             $this->release($decaySeconds);

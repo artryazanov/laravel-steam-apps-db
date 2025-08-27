@@ -22,7 +22,8 @@ class FetchSteamAppNewsComponent
     /**
      * Fetch the latest news for Steam apps and store them in the database.
      *
-     * @param  string  $appid  Specific Steam app ID to fetch news for
+     * @param string $appid Specific Steam app ID to fetch news for
+     * @throws LaravelSteamAppsDbException
      */
     public function fetchSteamAppNews(string $appid): void
     {
@@ -48,11 +49,11 @@ class FetchSteamAppNewsComponent
             } catch (Exception $e) {
                 DB::rollBack();
                 $errorMessage = "Failed to store news for app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
-                report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
+                throw new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e);
             }
         } catch (Exception $e) {
             $errorMessage = "Error processing app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
-            report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
+            throw new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e);
         }
     }
 
