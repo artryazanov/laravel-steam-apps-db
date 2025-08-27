@@ -9,6 +9,7 @@ use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 
 class ImportSteamAppsComponent
@@ -87,10 +88,13 @@ class ImportSteamAppsComponent
                         $updated++;
                     }
 
-                    // Dispatch jobs to update details and news for this app
+                    // Conditionally dispatch jobs to update details and news for this app
                     try {
-                        FetchSteamAppDetailsJob::dispatch((int) $steamApp->appid);
-                        FetchSteamAppNewsJob::dispatch((int) $steamApp->appid);
+                        $shouldDispatch = $this->shouldDispatch($steamApp);
+                        if ($shouldDispatch) {
+                            FetchSteamAppDetailsJob::dispatch((int) $steamApp->appid);
+                            FetchSteamAppNewsJob::dispatch((int) $steamApp->appid);
+                        }
                     } catch (Exception $e) {
                         $command->error("Failed to dispatch jobs for appid {$steamApp->appid}: {$e->getMessage()}");
                     }
@@ -109,5 +113,63 @@ class ImportSteamAppsComponent
             $command->error($errorMessage);
             report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
         }
+    }
+
+    /**
+     * Determine whether update jobs should be dispatched for the given SteamApp.
+     *
+     * Rules:
+     * - If last_details_update is null, dispatch.
+     * - Else, choose the minimal interval based on release age thresholds and compare to last update.
+     */
+    private function shouldDispatch(SteamApp $steamApp, ?Carbon $now = null): bool
+    {
+        $lastUpdate = $steamApp->last_details_update; // Carbon|null
+        if (empty($lastUpdate)) {
+            return true;
+        }
+
+        $thresholds = config('laravel-steam-apps-db.release_age_thresholds', []);
+        $intervals = config('laravel-steam-apps-db.details_update_intervals', []);
+
+        $recentMonths = (int) ($thresholds['recent_months'] ?? 6);
+        $midMaxYears = (int) ($thresholds['mid_max_years'] ?? 2);
+
+        $recentDays = (int) ($intervals['recent_days'] ?? 7);
+        $midDays = (int) ($intervals['mid_days'] ?? 30);
+        $oldDays = (int) ($intervals['old_days'] ?? 183);
+
+        $now ??= Carbon::now();
+
+        $detail = $steamApp->detail; // may be null
+        $releaseDate = $detail?->release_date; // Carbon|null
+
+        // Classify release age
+        $isRecent = false;
+        $isMid = false;
+
+        if (empty($releaseDate)) {
+            $isRecent = true; // treat unknown release date as recent
+        } else {
+            if ($releaseDate->greaterThan($now)) {
+                $isRecent = true; // future release treated as recent
+            } else {
+                $monthsSinceRelease = $releaseDate->diffInMonths($now);
+                if ($monthsSinceRelease < $recentMonths) {
+                    $isRecent = true;
+                } else {
+                    $yearsSinceRelease = $releaseDate->diffInYears($now);
+                    if ($yearsSinceRelease < $midMaxYears) {
+                        $isMid = true;
+                    }
+                }
+            }
+        }
+
+        // Determine minimal days since last update required
+        $minDaysSinceUpdate = $isRecent ? $recentDays : ($isMid ? $midDays : $oldDays);
+
+        // Dispatch only if more than configured interval has passed since last update
+        return $lastUpdate->diffInDays($now) > $minDaysSinceUpdate;
     }
 }
