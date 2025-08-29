@@ -47,7 +47,7 @@ class ImportSteamAppsComponentTest extends TestCase
 
         Bus::fake();
         $this->httpFakeSingleApp();
-        (new ImportSteamAppsComponent())->importSteamApps();
+        (new ImportSteamAppsComponent)->importSteamApps();
 
         // Details should still be dispatched
         Bus::assertDispatched(FetchSteamAppDetailsJob::class);
