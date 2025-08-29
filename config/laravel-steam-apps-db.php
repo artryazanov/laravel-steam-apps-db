@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // Toggle Steam news scanning (jobs dispatch). Default: disabled
+    'enable_news_scanning' => env('LSADB_ENABLE_NEWS_SCANNING', false),
+
     // The decay (lock) duration for FetchSteamApp* jobs in seconds.
     'decay_seconds' => env('LARAVEL_STEAM_APPS_DB_DECAY_SECONDS', 1),
 

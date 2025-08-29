@@ -20,6 +20,8 @@ class ImportSteamAppsComponentTest extends TestCase
 
         // Deterministic config for tests
         config([
+            // Enable news scanning for default test expectations
+            'laravel-steam-apps-db.enable_news_scanning' => true,
             'laravel-steam-apps-db.release_age_thresholds.recent_months' => 6,
             'laravel-steam-apps-db.release_age_thresholds.mid_max_years' => 2,
             'laravel-steam-apps-db.details_update_intervals.recent_days' => 7,
@@ -29,6 +31,28 @@ class ImportSteamAppsComponentTest extends TestCase
 
         // Fix "now" for deterministic date math
         Carbon::setTestNow(Carbon::create(2025, 8, 27, 12, 0, 0, 'UTC'));
+    }
+
+    public function test_news_scanning_can_be_disabled_by_config(): void
+    {
+        // Disable news scanning
+        config(['laravel-steam-apps-db.enable_news_scanning' => false]);
+
+        // Pre-create app with null last_details_update to force dispatch
+        SteamApp::create([
+            'appid' => 42,
+            'name' => 'App',
+            'last_details_update' => null,
+        ]);
+
+        Bus::fake();
+        $this->httpFakeSingleApp();
+        (new ImportSteamAppsComponent())->importSteamApps();
+
+        // Details should still be dispatched
+        Bus::assertDispatched(FetchSteamAppDetailsJob::class);
+        // News should NOT be dispatched when disabled
+        Bus::assertNotDispatched(FetchSteamAppNewsJob::class);
     }
 
     protected function tearDown(): void

@@ -14,6 +14,13 @@ class ImportSteamAppsCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Enable news scanning for these console tests unless specifically disabled
+        config(['laravel-steam-apps-db.enable_news_scanning' => true]);
+    }
+
     public function test_command_imports_steam_apps_successfully(): void
     {
         // Mock HTTP response from Steam API

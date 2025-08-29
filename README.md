@@ -59,6 +59,16 @@ This will fetch a list of all Steam applications and store them in the `steam_ap
 
 After saving each app, this command dispatches queued jobs to fetch the app's details and news asynchronously via Laravel's queue.
 
+### Configuration
+
+- `laravel-steam-apps-db.enable_news_scanning`: Controls whether the package dispatches jobs to fetch Steam news. Default is `false` (disabled). Set via env `LSADB_ENABLE_NEWS_SCANNING=true` or publish and edit the config.
+
+Publish the config if needed:
+
+```bash
+php artisan vendor:publish --tag=laravel-steam-apps-db-config
+```
+
 ### Queue and Jobs
 
 Starting from the current version, fetching details and news is performed by queued jobs that are dispatched per app during import:
@@ -82,6 +92,8 @@ use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob;
 
 // Dispatch jobs for a specific appid (e.g., 570 - DOTA 2)
 FetchSteamAppDetailsJob::dispatch(570);
+// Note: News scanning is optional. Ensure it's enabled in config
+// or dispatch the job explicitly as needed.
 FetchSteamAppNewsJob::dispatch(570);
 ```
 

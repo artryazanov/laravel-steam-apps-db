@@ -88,12 +88,15 @@ class ImportSteamAppsComponent
                         $updated++;
                     }
 
-                    // Conditionally dispatch jobs to update details and news for this app
+                    // Conditionally dispatch jobs to update details and (optionally) news for this app
                     try {
                         $shouldDispatch = $this->shouldDispatch($steamApp);
                         if ($shouldDispatch) {
                             FetchSteamAppDetailsJob::dispatch((int) $steamApp->appid);
-                            FetchSteamAppNewsJob::dispatch((int) $steamApp->appid);
+                            // News scanning is optional and disabled by default via config
+                            if ((bool) config('laravel-steam-apps-db.enable_news_scanning', false)) {
+                                FetchSteamAppNewsJob::dispatch((int) $steamApp->appid);
+                            }
                         }
                     } catch (Exception $e) {
                         $command->error("Failed to dispatch jobs for appid {$steamApp->appid}: {$e->getMessage()}");
