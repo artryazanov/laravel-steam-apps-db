@@ -80,7 +80,7 @@ class ImportSteamAppsComponentTest extends TestCase
         $this->httpFakeSingleApp();
 
         // Execute component directly (uses NullCommand internally)
-        (new ImportSteamAppsComponent())->importSteamApps();
+        (new ImportSteamAppsComponent)->importSteamApps();
     }
 
     public function test_dispatch_when_last_update_is_null(): void
