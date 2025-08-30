@@ -4,11 +4,13 @@ namespace Artryazanov\LaravelSteamAppsDb\Components;
 
 use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppAchievementHighlighted;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppCategory;
-use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDetail;
-use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDlc;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppContentDescriptorId;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDemo;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDetail;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDeveloper;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDlc;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppGenre;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppMovie;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPackage;
@@ -16,11 +18,9 @@ use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPackageGroup;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPackageGroupSub;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPriceInfo;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPublisher;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppRating;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppRequirement;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppScreenshot;
-use Artryazanov\LaravelSteamAppsDb\Models\SteamAppAchievementHighlighted;
-use Artryazanov\LaravelSteamAppsDb\Models\SteamAppContentDescriptorId;
-use Artryazanov\LaravelSteamAppsDb\Models\SteamAppRating;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -393,7 +393,7 @@ class FetchSteamAppDetailsComponent
      */
     private function storeDlcs(SteamApp $app, array $dlcIds): void
     {
-        $dlcIds = array_values(array_unique(array_filter($dlcIds, fn($v) => is_numeric($v))));
+        $dlcIds = array_values(array_unique(array_filter($dlcIds, fn ($v) => is_numeric($v))));
         $existing = SteamAppDlc::where('steam_app_id', $app->id)->get();
         $existingIds = $existing->pluck('dlc_appid')->toArray();
 
@@ -437,7 +437,7 @@ class FetchSteamAppDetailsComponent
      */
     private function storePackages(SteamApp $app, array $packageIds): void
     {
-        $packageIds = array_values(array_unique(array_filter($packageIds, fn($v) => is_numeric($v))));
+        $packageIds = array_values(array_unique(array_filter($packageIds, fn ($v) => is_numeric($v))));
         SteamAppPackage::where('steam_app_id', $app->id)
             ->whereNotIn('package_id', $packageIds)
             ->delete();
@@ -460,10 +460,14 @@ class FetchSteamAppDetailsComponent
         SteamAppPackageGroup::where('steam_app_id', $app->id)
             ->whereNotIn('name', $names)
             ->get()
-            ->each(function ($group) { $group->delete(); });
+            ->each(function ($group) {
+                $group->delete();
+            });
 
         foreach ($groups as $group) {
-            if (! isset($group['name'])) { continue; }
+            if (! isset($group['name'])) {
+                continue;
+            }
             $groupModel = SteamAppPackageGroup::updateOrCreate(
                 ['steam_app_id' => $app->id, 'name' => $group['name']],
                 [
@@ -483,7 +487,9 @@ class FetchSteamAppDetailsComponent
                 ->whereNotIn('packageid', $packageids)
                 ->delete();
             foreach ($subs as $sub) {
-                if (! isset($sub['packageid'])) { continue; }
+                if (! isset($sub['packageid'])) {
+                    continue;
+                }
                 SteamAppPackageGroupSub::updateOrCreate(
                     [
                         'steam_app_package_group_id' => $groupModel->id,
@@ -508,7 +514,7 @@ class FetchSteamAppDetailsComponent
      */
     private function storeAchievementsHighlighted(SteamApp $app, array $highlighted): void
     {
-        $keys = collect($highlighted)->map(fn($h) => ($h['name'] ?? '').'|'.($h['path'] ?? ''))->all();
+        $keys = collect($highlighted)->map(fn ($h) => ($h['name'] ?? '').'|'.($h['path'] ?? ''))->all();
         // Delete not present
         $existing = SteamAppAchievementHighlighted::where('steam_app_id', $app->id)->get();
         foreach ($existing as $row) {
@@ -521,7 +527,9 @@ class FetchSteamAppDetailsComponent
         foreach ($highlighted as $h) {
             $name = $h['name'] ?? null;
             $path = $h['path'] ?? null;
-            if (! $name) { continue; }
+            if (! $name) {
+                continue;
+            }
             SteamAppAchievementHighlighted::updateOrCreate(
                 ['steam_app_id' => $app->id, 'name' => $name, 'path' => $path],
                 []
@@ -534,7 +542,7 @@ class FetchSteamAppDetailsComponent
      */
     private function storeContentDescriptorIds(SteamApp $app, array $ids): void
     {
-        $ids = array_values(array_unique(array_filter($ids, fn($v) => is_numeric($v))));
+        $ids = array_values(array_unique(array_filter($ids, fn ($v) => is_numeric($v))));
         SteamAppContentDescriptorId::where('steam_app_id', $app->id)
             ->whereNotIn('descriptor_id', $ids)
             ->delete();

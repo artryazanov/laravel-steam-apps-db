@@ -34,4 +34,3 @@ class SteamAppPackageGroup extends Model
         return $this->hasMany(SteamAppPackageGroupSub::class, 'steam_app_package_group_id');
     }
 }
-

@@ -23,4 +23,3 @@ class SteamAppAchievementHighlighted extends Model
         return $this->belongsTo(SteamApp::class, 'steam_app_id');
     }
 }
-
