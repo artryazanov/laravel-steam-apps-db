@@ -23,17 +23,24 @@ use Illuminate\Support\Carbon;
  * @property string|null $short_description Short description of the game
  * @property string|null $supported_languages Supported languages
  * @property string|null $header_image URL to the header image
+ * @property string|null $controller_support Controller support type
  * @property string|null $library_image URL to the library image 600x900
  * @property string|null $library_hero_image URL to the library hero image
  * @property string|null $capsule_image URL to the capsule image
  * @property string|null $capsule_imagev5 URL to the capsule image v5
  * @property string|null $website Game website URL
  * @property string|null $legal_notice Legal notice
+ * @property string|null $drm_notice DRM notice
+ * @property int|null $metacritic_score Metacritic score
+ * @property string|null $metacritic_url Metacritic URL
+ * @property int|null $recommendations_total Total recommendations count
+ * @property int|null $achievements_total Total achievements count
  * @property bool $windows Whether the game is available on Windows
  * @property bool $mac Whether the game is available on Mac
  * @property bool $linux Whether the game is available on Linux
  * @property string|null $background URL to the background image
  * @property string|null $background_raw URL to the raw background image
+ * @property string|null $content_descriptors_notes Content descriptors notes
  * @property Carbon|null $release_date Release date of the game
  * @property bool $coming_soon Whether the game is coming soon
  * @property string|null $support_url Support URL
@@ -54,6 +61,7 @@ class SteamAppDetail extends Model
         'name',
         'required_age',
         'is_free',
+        'controller_support',
         'detailed_description',
         'about_the_game',
         'short_description',
@@ -65,11 +73,17 @@ class SteamAppDetail extends Model
         'capsule_imagev5',
         'website',
         'legal_notice',
+        'drm_notice',
+        'metacritic_score',
+        'metacritic_url',
+        'recommendations_total',
+        'achievements_total',
         'windows',
         'mac',
         'linux',
         'background',
         'background_raw',
+        'content_descriptors_notes',
         'release_date',
         'coming_soon',
         'support_url',
@@ -79,6 +93,9 @@ class SteamAppDetail extends Model
     protected $casts = [
         'required_age' => 'integer',
         'is_free' => 'boolean',
+        'recommendations_total' => 'integer',
+        'achievements_total' => 'integer',
+        'metacritic_score' => 'integer',
         'windows' => 'boolean',
         'mac' => 'boolean',
         'linux' => 'boolean',

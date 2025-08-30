@@ -119,6 +119,14 @@ The package provides several Eloquent models to interact with the stored data:
 - **SteamAppScreenshot**: Screenshots for Steam apps
 - **SteamAppMovie**: Videos/trailers for Steam apps
 - **SteamAppPriceInfo**: Price information for Steam apps
+- **SteamAppDlc**: DLC appids linked to a base app
+- **SteamAppDemo**: Demos (appid + description)
+- **SteamAppPackage**: Store package ids
+- **SteamAppPackageGroup**: Package groups with display metadata
+- **SteamAppPackageGroupSub**: Individual package options inside groups
+- **SteamAppAchievementHighlighted**: Highlighted achievements
+- **SteamAppContentDescriptorId**: Content descriptor ids (e.g. violence)
+- **SteamAppRating**: Ratings from boards (ESRB, PEGI, etc.)
 
 ### Example Usage
 
@@ -178,6 +186,14 @@ The package creates the following tables:
 13. `steam_app_publisher` - Pivot table for app-publisher relationship
 14. `steam_app_price_info` - Price information for each app
 15. `steam_app_news` - News items for each app
+16. `steam_app_dlcs` - DLC appids for each app
+17. `steam_app_demos` - Demos for each app
+18. `steam_app_packages` - Package ids for each app
+19. `steam_app_package_groups` - Package groups per app
+20. `steam_app_package_group_subs` - Group options (subs)
+21. `steam_app_achievements_highlighted` - Highlighted achievements
+22. `steam_app_content_descriptor_ids` - Content descriptor ids
+23. `steam_app_ratings` - Ratings by boards
 
 ## Testing
 

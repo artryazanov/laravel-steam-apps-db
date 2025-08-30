@@ -6,13 +6,21 @@ use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppCategory;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDetail;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDlc;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDemo;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppDeveloper;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppGenre;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppMovie;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPackage;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPackageGroup;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPackageGroupSub;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPriceInfo;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPublisher;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppRequirement;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppScreenshot;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppAchievementHighlighted;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppContentDescriptorId;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppRating;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -176,6 +184,7 @@ class FetchSteamAppDetailsComponent
                 'name' => $details['name'],
                 'required_age' => $details['required_age'] ?? 0,
                 'is_free' => $details['is_free'] ?? false,
+                'controller_support' => $details['controller_support'] ?? null,
                 'detailed_description' => $details['detailed_description'] ?? null,
                 'about_the_game' => $details['about_the_game'] ?? null,
                 'short_description' => $details['short_description'] ?? null,
@@ -187,17 +196,58 @@ class FetchSteamAppDetailsComponent
                 'capsule_imagev5' => $details['capsule_imagev5'] ?? null,
                 'website' => $details['website'] ?? null,
                 'legal_notice' => $details['legal_notice'] ?? null,
+                'drm_notice' => $details['drm_notice'] ?? null,
+                'metacritic_score' => $details['metacritic']['score'] ?? null,
+                'metacritic_url' => $details['metacritic']['url'] ?? null,
+                'recommendations_total' => $details['recommendations']['total'] ?? null,
+                'achievements_total' => $details['achievements']['total'] ?? null,
                 'windows' => $details['platforms']['windows'] ?? false,
                 'mac' => $details['platforms']['mac'] ?? false,
                 'linux' => $details['platforms']['linux'] ?? false,
                 'background' => $details['background'] ?? null,
                 'background_raw' => $details['background_raw'] ?? null,
+                'content_descriptors_notes' => $details['content_descriptors']['notes'] ?? null,
                 'release_date' => $releaseDate,
                 'coming_soon' => $details['release_date']['coming_soon'] ?? false,
                 'support_url' => $details['support_info']['url'] ?? null,
                 'support_email' => $details['support_info']['email'] ?? null,
             ]
         );
+
+        // Store DLC list
+        if (isset($details['dlc']) && is_array($details['dlc'])) {
+            $this->storeDlcs($app, $details['dlc']);
+        }
+
+        // Store Demos
+        if (isset($details['demos']) && is_array($details['demos'])) {
+            $this->storeDemos($app, $details['demos']);
+        }
+
+        // Store Packages
+        if (isset($details['packages']) && is_array($details['packages'])) {
+            $this->storePackages($app, $details['packages']);
+        }
+
+        // Store Package Groups
+        if (isset($details['package_groups']) && is_array($details['package_groups'])) {
+            $this->storePackageGroups($app, $details['package_groups']);
+        }
+
+        // Store highlighted achievements
+        if (isset($details['achievements']['highlighted']) && is_array($details['achievements']['highlighted'])) {
+            $this->storeAchievementsHighlighted($app, $details['achievements']['highlighted']);
+        }
+
+        // Store content descriptor IDs
+        if (isset($details['content_descriptors']['ids']) && is_array($details['content_descriptors']['ids'])) {
+            $this->storeContentDescriptorIds($app, $details['content_descriptors']['ids']);
+        }
+
+        // Store ratings
+        if (isset($details['ratings']) && is_array($details['ratings'])) {
+            $this->storeRatings($app, $details['ratings']);
+        }
 
         // Store PC requirements
         if (isset($details['pc_requirements'])) {
@@ -333,6 +383,190 @@ class FetchSteamAppDetailsComponent
                     'mp4_480' => $movieData['mp4']['480'] ?? null,
                     'mp4_max' => $movieData['mp4']['max'] ?? null,
                     'highlight' => $movieData['highlight'] ?? false,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Store DLCs list.
+     */
+    private function storeDlcs(SteamApp $app, array $dlcIds): void
+    {
+        $dlcIds = array_values(array_unique(array_filter($dlcIds, fn($v) => is_numeric($v))));
+        $existing = SteamAppDlc::where('steam_app_id', $app->id)->get();
+        $existingIds = $existing->pluck('dlc_appid')->toArray();
+
+        // Delete missing
+        SteamAppDlc::where('steam_app_id', $app->id)
+            ->whereNotIn('dlc_appid', $dlcIds)
+            ->delete();
+
+        // Upsert
+        foreach ($dlcIds as $dlcId) {
+            SteamAppDlc::updateOrCreate(
+                ['steam_app_id' => $app->id, 'dlc_appid' => (int) $dlcId],
+                []
+            );
+        }
+    }
+
+    /**
+     * Store demos list.
+     */
+    private function storeDemos(SteamApp $app, array $demos): void
+    {
+        $ids = collect($demos)->pluck('appid')->filter()->unique()->values()->all();
+        SteamAppDemo::where('steam_app_id', $app->id)
+            ->whereNotIn('appid', $ids)
+            ->delete();
+
+        foreach ($demos as $demo) {
+            if (! isset($demo['appid'])) {
+                continue;
+            }
+            SteamAppDemo::updateOrCreate(
+                ['steam_app_id' => $app->id, 'appid' => (int) $demo['appid']],
+                ['description' => $demo['description'] ?? null]
+            );
+        }
+    }
+
+    /**
+     * Store packages list.
+     */
+    private function storePackages(SteamApp $app, array $packageIds): void
+    {
+        $packageIds = array_values(array_unique(array_filter($packageIds, fn($v) => is_numeric($v))));
+        SteamAppPackage::where('steam_app_id', $app->id)
+            ->whereNotIn('package_id', $packageIds)
+            ->delete();
+
+        foreach ($packageIds as $pid) {
+            SteamAppPackage::updateOrCreate(
+                ['steam_app_id' => $app->id, 'package_id' => (int) $pid],
+                []
+            );
+        }
+    }
+
+    /**
+     * Store package groups and subs.
+     */
+    private function storePackageGroups(SteamApp $app, array $groups): void
+    {
+        $names = collect($groups)->pluck('name')->filter()->unique()->values()->all();
+        // Delete removed groups (cascade removes subs)
+        SteamAppPackageGroup::where('steam_app_id', $app->id)
+            ->whereNotIn('name', $names)
+            ->get()
+            ->each(function ($group) { $group->delete(); });
+
+        foreach ($groups as $group) {
+            if (! isset($group['name'])) { continue; }
+            $groupModel = SteamAppPackageGroup::updateOrCreate(
+                ['steam_app_id' => $app->id, 'name' => $group['name']],
+                [
+                    'title' => $group['title'] ?? null,
+                    'description' => $group['description'] ?? null,
+                    'selection_text' => $group['selection_text'] ?? null,
+                    'save_text' => $group['save_text'] ?? null,
+                    'display_type' => $group['display_type'] ?? 0,
+                    'is_recurring_subscription' => $group['is_recurring_subscription'] ?? null,
+                ]
+            );
+
+            // Subs
+            $subs = $group['subs'] ?? [];
+            $packageids = collect($subs)->pluck('packageid')->filter()->unique()->values()->all();
+            SteamAppPackageGroupSub::where('steam_app_package_group_id', $groupModel->id)
+                ->whereNotIn('packageid', $packageids)
+                ->delete();
+            foreach ($subs as $sub) {
+                if (! isset($sub['packageid'])) { continue; }
+                SteamAppPackageGroupSub::updateOrCreate(
+                    [
+                        'steam_app_package_group_id' => $groupModel->id,
+                        'packageid' => (int) $sub['packageid'],
+                    ],
+                    [
+                        'percent_savings_text' => $sub['percent_savings_text'] ?? null,
+                        'percent_savings' => $sub['percent_savings'] ?? 0,
+                        'option_text' => $sub['option_text'] ?? null,
+                        'option_description' => $sub['option_description'] ?? null,
+                        'can_get_free_license' => $sub['can_get_free_license'] ?? null,
+                        'is_free_license' => (bool) ($sub['is_free_license'] ?? false),
+                        'price_in_cents_with_discount' => $sub['price_in_cents_with_discount'] ?? null,
+                    ]
+                );
+            }
+        }
+    }
+
+    /**
+     * Store highlighted achievements.
+     */
+    private function storeAchievementsHighlighted(SteamApp $app, array $highlighted): void
+    {
+        $keys = collect($highlighted)->map(fn($h) => ($h['name'] ?? '').'|'.($h['path'] ?? ''))->all();
+        // Delete not present
+        $existing = SteamAppAchievementHighlighted::where('steam_app_id', $app->id)->get();
+        foreach ($existing as $row) {
+            $key = $row->name.'|'.($row->path ?? '');
+            if (! in_array($key, $keys, true)) {
+                $row->delete();
+            }
+        }
+
+        foreach ($highlighted as $h) {
+            $name = $h['name'] ?? null;
+            $path = $h['path'] ?? null;
+            if (! $name) { continue; }
+            SteamAppAchievementHighlighted::updateOrCreate(
+                ['steam_app_id' => $app->id, 'name' => $name, 'path' => $path],
+                []
+            );
+        }
+    }
+
+    /**
+     * Store content descriptor IDs.
+     */
+    private function storeContentDescriptorIds(SteamApp $app, array $ids): void
+    {
+        $ids = array_values(array_unique(array_filter($ids, fn($v) => is_numeric($v))));
+        SteamAppContentDescriptorId::where('steam_app_id', $app->id)
+            ->whereNotIn('descriptor_id', $ids)
+            ->delete();
+        foreach ($ids as $id) {
+            SteamAppContentDescriptorId::updateOrCreate(
+                ['steam_app_id' => $app->id, 'descriptor_id' => (int) $id],
+                []
+            );
+        }
+    }
+
+    /**
+     * Store ratings.
+     */
+    private function storeRatings(SteamApp $app, array $ratings): void
+    {
+        $boards = array_keys($ratings);
+        SteamAppRating::where('steam_app_id', $app->id)
+            ->whereNotIn('board', $boards)
+            ->delete();
+
+        foreach ($ratings as $board => $data) {
+            SteamAppRating::updateOrCreate(
+                ['steam_app_id' => $app->id, 'board' => (string) $board],
+                [
+                    'rating' => $data['rating'] ?? null,
+                    'descriptors' => $data['descriptors'] ?? null,
+                    'display_online_notice' => $data['display_online_notice'] ?? null,
+                    'required_age' => $data['required_age'] ?? null,
+                    'use_age_gate' => $data['use_age_gate'] ?? null,
+                    'banned' => $data['banned'] ?? null,
+                    'rating_generated' => $data['rating_generated'] ?? null,
                 ]
             );
         }

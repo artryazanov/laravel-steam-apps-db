@@ -157,6 +157,41 @@ class SteamApp extends Model
         return $this->hasOne(SteamAppPriceInfo::class, 'steam_app_id', 'id');
     }
 
+    public function dlcs(): HasMany
+    {
+        return $this->hasMany(SteamAppDlc::class, 'steam_app_id', 'id');
+    }
+
+    public function demos(): HasMany
+    {
+        return $this->hasMany(SteamAppDemo::class, 'steam_app_id', 'id');
+    }
+
+    public function packages(): HasMany
+    {
+        return $this->hasMany(SteamAppPackage::class, 'steam_app_id', 'id');
+    }
+
+    public function packageGroups(): HasMany
+    {
+        return $this->hasMany(SteamAppPackageGroup::class, 'steam_app_id', 'id');
+    }
+
+    public function achievementsHighlighted(): HasMany
+    {
+        return $this->hasMany(SteamAppAchievementHighlighted::class, 'steam_app_id', 'id');
+    }
+
+    public function contentDescriptorIds(): HasMany
+    {
+        return $this->hasMany(SteamAppContentDescriptorId::class, 'steam_app_id', 'id');
+    }
+
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(SteamAppRating::class, 'steam_app_id', 'id');
+    }
+
     /**
      * Get the news items for this app.
      */

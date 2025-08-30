@@ -548,6 +548,160 @@ class FetchSteamAppDetailsComponentTest extends TestCase
         ]);
     }
 
+    public function test_saves_additional_fields_from_details(): void
+    {
+        $appid = 111111;
+        $app = SteamApp::factory()->create([
+            'appid' => $appid,
+            'name' => 'Extra Fields App',
+        ]);
+
+        $apiUrl = "store.steampowered.com/api/appdetails?appids={$appid}&cc=us&l=en";
+
+        Http::fake([
+            $apiUrl => Http::response([
+                (string) $appid => [
+                    'success' => true,
+                    'data' => [
+                        'type' => 'game',
+                        'name' => 'Extra Fields App',
+                        'steam_appid' => $appid,
+                        'required_age' => 18,
+                        'is_free' => false,
+                        'controller_support' => 'full',
+                        'dlc' => [2214823, 2214822],
+                        'drm_notice' => 'Denuvo',
+                        'demos' => [
+                            ['appid' => 2407990, 'description' => ''],
+                        ],
+                        'packages' => [778151, 778152],
+                        'package_groups' => [
+                            [
+                                'name' => 'default',
+                                'subs' => [
+                                    ['packageid' => 778151, 'price_in_cents_with_discount' => 149000],
+                                ],
+                            ],
+                        ],
+                        'metacritic' => ['score' => 76, 'url' => 'https://example.com/mc'],
+                        'recommendations' => ['total' => 30810],
+                        'achievements' => [
+                            'total' => 69,
+                            'highlighted' => [
+                                ['name' => 'A', 'path' => 'https://example.com/a.jpg'],
+                            ],
+                        ],
+                        'platforms' => [
+                            'windows' => true,
+                            'mac' => false,
+                            'linux' => false,
+                        ],
+                        'content_descriptors' => ['ids' => [1, 2], 'notes' => 'Violence'],
+                        'ratings' => [
+                            'esrb' => [
+                                'rating' => 'm',
+                                'required_age' => '17',
+                            ],
+                        ],
+                        'release_date' => [
+                            'coming_soon' => false,
+                            'date' => '2023-02-21',
+                        ],
+                        'support_info' => [
+                            'url' => 'mundfish.com',
+                            'email' => '',
+                        ],
+                    ],
+                ],
+            ]),
+            'shared.akamai.steamstatic.com/*' => Http::response('', 404),
+        ]);
+
+        $component = new FetchSteamAppDetailsComponent;
+        $component->fetchSteamAppDetails((string) $appid);
+
+        $detail = \Artryazanov\LaravelSteamAppsDb\Models\SteamAppDetail::where('steam_app_id', $app->id)->firstOrFail();
+
+        $this->assertSame('full', $detail->controller_support);
+        $this->assertSame('Denuvo', $detail->drm_notice);
+
+        // DLCs in table
+        $this->assertDatabaseHas('steam_app_dlcs', [
+            'steam_app_id' => $app->id,
+            'dlc_appid' => 2214823,
+        ]);
+        $this->assertDatabaseHas('steam_app_dlcs', [
+            'steam_app_id' => $app->id,
+            'dlc_appid' => 2214822,
+        ]);
+
+        // Demos table
+        $this->assertDatabaseHas('steam_app_demos', [
+            'steam_app_id' => $app->id,
+            'appid' => 2407990,
+            'description' => '',
+        ]);
+
+        // Packages table
+        $this->assertDatabaseHas('steam_app_packages', [
+            'steam_app_id' => $app->id,
+            'package_id' => 778151,
+        ]);
+        $this->assertDatabaseHas('steam_app_packages', [
+            'steam_app_id' => $app->id,
+            'package_id' => 778152,
+        ]);
+
+        // Package groups and subs
+        $this->assertDatabaseHas('steam_app_package_groups', [
+            'steam_app_id' => $app->id,
+            'name' => 'default',
+        ]);
+        $groupId = \Artryazanov\LaravelSteamAppsDb\Models\SteamAppPackageGroup::where('steam_app_id', $app->id)
+            ->where('name', 'default')
+            ->value('id');
+        $this->assertNotNull($groupId);
+        $this->assertDatabaseHas('steam_app_package_group_subs', [
+            'steam_app_package_group_id' => $groupId,
+            'packageid' => 778151,
+            'price_in_cents_with_discount' => 149000,
+        ]);
+
+        // Metacritic flattened
+        $this->assertSame(76, $detail->metacritic_score);
+        $this->assertSame('https://example.com/mc', $detail->metacritic_url);
+
+        // Totals
+        $this->assertSame(30810, $detail->recommendations_total);
+        $this->assertSame(69, $detail->achievements_total);
+
+        // Highlighted achievements table
+        $this->assertDatabaseHas('steam_app_achievements_highlighted', [
+            'steam_app_id' => $app->id,
+            'name' => 'A',
+            'path' => 'https://example.com/a.jpg',
+        ]);
+
+        // Content descriptors: notes + ids
+        $this->assertSame('Violence', $detail->content_descriptors_notes);
+        $this->assertDatabaseHas('steam_app_content_descriptor_ids', [
+            'steam_app_id' => $app->id,
+            'descriptor_id' => 1,
+        ]);
+        $this->assertDatabaseHas('steam_app_content_descriptor_ids', [
+            'steam_app_id' => $app->id,
+            'descriptor_id' => 2,
+        ]);
+
+        // Ratings table
+        $this->assertDatabaseHas('steam_app_ratings', [
+            'steam_app_id' => $app->id,
+            'board' => 'esrb',
+            'rating' => 'm',
+            'required_age' => '17',
+        ]);
+    }
+
     public function test_library_hero_image_is_null_when_url_missing(): void
     {
         $appid = 987654;
