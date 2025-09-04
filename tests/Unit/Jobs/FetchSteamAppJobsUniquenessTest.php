@@ -88,4 +88,3 @@ class FetchSteamAppJobsUniquenessTest extends TestCase
         }
     }
 }
-

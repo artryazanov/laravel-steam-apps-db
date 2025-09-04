@@ -221,7 +221,7 @@ class ImportSteamAppsComponentTest extends TestCase
         $this->runImport();
         Bus::assertNotDispatched(FetchSteamAppDetailsJob::class);
         Bus::assertNotDispatched(FetchSteamAppNewsJob::class);
-        }
+    }
 
     /**
      * Flush cache storage and also clear ArrayStore locks used by ShouldBeUnique jobs.
