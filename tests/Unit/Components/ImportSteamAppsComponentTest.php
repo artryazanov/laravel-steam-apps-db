@@ -202,7 +202,8 @@ class ImportSteamAppsComponentTest extends TestCase
         Bus::assertDispatched(FetchSteamAppNewsJob::class);
 
         // Future release date -> also recent
-        Cache::flush();
+        // Clear cache and unique job locks between runs
+        $this->flushCacheAndLocks();
         Bus::fake();
         $app1->detail()->create([
             'name' => 'App',
@@ -213,11 +214,26 @@ class ImportSteamAppsComponentTest extends TestCase
         Bus::assertDispatched(FetchSteamAppNewsJob::class);
 
         // But at the boundary (exact 7 days) should NOT dispatch for recent
-        Cache::flush();
+        // Clear cache and unique job locks between runs
+        $this->flushCacheAndLocks();
         Bus::fake();
         $app1->update(['last_details_update' => Carbon::now()->subDays(7)]);
         $this->runImport();
         Bus::assertNotDispatched(FetchSteamAppDetailsJob::class);
         Bus::assertNotDispatched(FetchSteamAppNewsJob::class);
+        }
+
+    /**
+     * Flush cache storage and also clear ArrayStore locks used by ShouldBeUnique jobs.
+     */
+    private function flushCacheAndLocks(): void
+    {
+        Cache::flush();
+
+        $store = Cache::getStore();
+        // In tests we typically use ArrayStore where locks are kept separately
+        if (property_exists($store, 'locks')) {
+            $store->locks = [];
+        }
     }
 }
