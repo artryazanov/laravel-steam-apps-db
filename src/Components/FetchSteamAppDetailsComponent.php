@@ -370,7 +370,7 @@ class FetchSteamAppDetailsComponent
 
         // Create or update movies
         foreach ($movies as $movieData) {
-            SteamAppMovie::updateOrCreate(
+            SteamAppMovie::withTrashed()->updateOrCreate(
                 [
                     'steam_app_id' => $app->id,
                     'movie_id' => $movieData['id'],
@@ -383,6 +383,7 @@ class FetchSteamAppDetailsComponent
                     'mp4_480' => $movieData['mp4']['480'] ?? null,
                     'mp4_max' => $movieData['mp4']['max'] ?? null,
                     'highlight' => $movieData['highlight'] ?? false,
+                    'deleted_at' => null,
                 ]
             );
         }
