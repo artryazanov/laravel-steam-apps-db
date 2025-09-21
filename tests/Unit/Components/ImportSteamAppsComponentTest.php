@@ -236,4 +236,59 @@ class ImportSteamAppsComponentTest extends TestCase
             $store->locks = [];
         }
     }
+
+    public function test_jobs_are_dispatched_to_configured_queue(): void
+    {
+        // Ensure clean unique locks
+        $this->flushCacheAndLocks();
+
+        // Configure custom queue
+        config([
+            'laravel-steam-apps-db.queue' => 'high',
+            'laravel-steam-apps-db.enable_news_scanning' => true,
+        ]);
+
+        // Force dispatch by having null last_details_update
+        SteamApp::create([
+            'appid' => 42,
+            'name' => 'App',
+            'last_details_update' => null,
+        ]);
+
+        Bus::fake();
+        $this->httpFakeSingleApp();
+        (new ImportSteamAppsComponent)->importSteamApps();
+
+        // Both jobs should be on the configured queue
+        Bus::assertDispatched(FetchSteamAppDetailsJob::class, function ($job) {
+            return ($job->queue ?? null) === 'high';
+        });
+        Bus::assertDispatched(FetchSteamAppNewsJob::class, function ($job) {
+            return ($job->queue ?? null) === 'high';
+        });
+    }
+
+    public function test_default_queue_is_used_when_not_overridden(): void
+    {
+        // Ensure clean unique locks
+        $this->flushCacheAndLocks();
+
+        // Do not set the queue config; it should default to 'default'
+        SteamApp::create([
+            'appid' => 42,
+            'name' => 'App',
+            'last_details_update' => null,
+        ]);
+
+        Bus::fake();
+        $this->httpFakeSingleApp();
+        (new ImportSteamAppsComponent)->importSteamApps();
+
+        Bus::assertDispatched(FetchSteamAppDetailsJob::class, function ($job) {
+            return ($job->queue ?? null) === 'default';
+        });
+        Bus::assertDispatched(FetchSteamAppNewsJob::class, function ($job) {
+            return ($job->queue ?? null) === 'default';
+        });
+    }
 }

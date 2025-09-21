@@ -62,6 +62,7 @@ After saving each app, this command dispatches queued jobs to fetch the app's de
 ### Configuration
 
 - `laravel-steam-apps-db.enable_news_scanning`: Controls whether the package dispatches jobs to fetch Steam news. Default is `false` (disabled). Set via env `LSADB_ENABLE_NEWS_SCANNING=true` or publish and edit the config.
+- `laravel-steam-apps-db.queue`: Queue name for dispatched jobs (e.g., `high`, `default`, `low`). Default is `default`. Set via env `LSADB_QUEUE=default` or publish and edit the config.
 
 Publish the config if needed:
 

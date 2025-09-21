@@ -92,10 +92,11 @@ class ImportSteamAppsComponent
                     try {
                         $shouldDispatch = $this->shouldDispatch($steamApp);
                         if ($shouldDispatch) {
-                            FetchSteamAppDetailsJob::dispatch((int) $steamApp->appid);
+                            $queue = (string) config('laravel-steam-apps-db.queue', 'default');
+                            FetchSteamAppDetailsJob::dispatch((int) $steamApp->appid)->onQueue($queue);
                             // News scanning is optional and disabled by default via config
                             if ((bool) config('laravel-steam-apps-db.enable_news_scanning', false)) {
-                                FetchSteamAppNewsJob::dispatch((int) $steamApp->appid);
+                                FetchSteamAppNewsJob::dispatch((int) $steamApp->appid)->onQueue($queue);
                             }
                         }
                     } catch (Exception $e) {
