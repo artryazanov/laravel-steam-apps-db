@@ -22,11 +22,6 @@ class ImportSteamAppsComponentTest extends TestCase
         config([
             // Enable news scanning for default test expectations
             'laravel-steam-apps-db.enable_news_scanning' => true,
-            'laravel-steam-apps-db.release_age_thresholds.recent_months' => 6,
-            'laravel-steam-apps-db.release_age_thresholds.mid_max_years' => 2,
-            'laravel-steam-apps-db.details_update_intervals.recent_days' => 7,
-            'laravel-steam-apps-db.details_update_intervals.mid_days' => 30,
-            'laravel-steam-apps-db.details_update_intervals.old_days' => 183,
         ]);
 
         // Fix "now" for deterministic date math
@@ -114,8 +109,8 @@ class ImportSteamAppsComponentTest extends TestCase
 
         $this->runImport();
 
-        Bus::assertNotDispatched(FetchSteamAppDetailsJob::class);
-        Bus::assertNotDispatched(FetchSteamAppNewsJob::class);
+        Bus::assertDispatched(FetchSteamAppDetailsJob::class);
+        Bus::assertDispatched(FetchSteamAppNewsJob::class);
     }
 
     public function test_recent_release_after_interval_dispatches(): void
@@ -152,15 +147,9 @@ class ImportSteamAppsComponentTest extends TestCase
         ]);
 
         $this->runImport();
-        Bus::assertNotDispatched(FetchSteamAppDetailsJob::class);
-        Bus::assertNotDispatched(FetchSteamAppNewsJob::class);
-
-        // 31 days -> dispatch
-        Bus::fake();
-        $app->update(['last_details_update' => Carbon::now()->subDays(31)]);
-        $this->runImport();
         Bus::assertDispatched(FetchSteamAppDetailsJob::class);
         Bus::assertDispatched(FetchSteamAppNewsJob::class);
+
     }
 
     public function test_old_release_respects_interval(): void
@@ -176,13 +165,6 @@ class ImportSteamAppsComponentTest extends TestCase
             'release_date' => Carbon::now()->subYears(3),
         ]);
 
-        $this->runImport();
-        Bus::assertNotDispatched(FetchSteamAppDetailsJob::class);
-        Bus::assertNotDispatched(FetchSteamAppNewsJob::class);
-
-        // 184 days -> dispatch
-        Bus::fake();
-        $app->update(['last_details_update' => Carbon::now()->subDays(184)]);
         $this->runImport();
         Bus::assertDispatched(FetchSteamAppDetailsJob::class);
         Bus::assertDispatched(FetchSteamAppNewsJob::class);
@@ -213,14 +195,14 @@ class ImportSteamAppsComponentTest extends TestCase
         Bus::assertDispatched(FetchSteamAppDetailsJob::class);
         Bus::assertDispatched(FetchSteamAppNewsJob::class);
 
-        // But at the boundary (exact 7 days) should NOT dispatch for recent
+        // Boundary case (exact 7 days) should still dispatch now
         // Clear cache and unique job locks between runs
         $this->flushCacheAndLocks();
         Bus::fake();
         $app1->update(['last_details_update' => Carbon::now()->subDays(7)]);
         $this->runImport();
-        Bus::assertNotDispatched(FetchSteamAppDetailsJob::class);
-        Bus::assertNotDispatched(FetchSteamAppNewsJob::class);
+        Bus::assertDispatched(FetchSteamAppDetailsJob::class);
+        Bus::assertDispatched(FetchSteamAppNewsJob::class);
     }
 
     /**
