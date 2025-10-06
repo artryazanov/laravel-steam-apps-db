@@ -63,7 +63,9 @@ After saving each app, this command dispatches queued jobs to fetch the app's de
 
 - `laravel-steam-apps-db.enable_news_scanning`: Controls whether the package dispatches jobs to fetch Steam news. Default is `false` (disabled). Set via env `LSADB_ENABLE_NEWS_SCANNING=true` or publish and edit the config.
 - `laravel-steam-apps-db.queue`: Queue name for dispatched jobs (e.g., `high`, `default`, `low`). Default is `default`. Set via env `LSADB_QUEUE=default` or publish and edit the config.
-- `laravel-steam-apps-db.decay_seconds`: Small pause (in seconds) applied by FetchSteamApp* jobs after each run to throttle API calls per worker. Default is `1`. Set via env `LARAVEL_STEAM_APPS_DB_DECAY_SECONDS=1`.
+- `laravel-steam-apps-db.decay_seconds`: Global rate limit interval (in seconds) enforced via Redis throttle for FetchSteamApp* jobs. When > 0, jobs across all workers will run at most once per interval; when 0 or less, throttling is disabled. Default is `1`. Set via env `LARAVEL_STEAM_APPS_DB_DECAY_SECONDS=1`.
+
+Note: Throttling requires Redis to be configured in your application (used by Laravel's `Redis::throttle`). If you don't use Redis, set `decay_seconds` to `0` to disable throttling.
 
 Publish the config if needed:
 
@@ -82,7 +84,7 @@ Additional notes:
 - Details job is always dispatched for every app during import.
 - News job is dispatched only when `laravel-steam-apps-db.enable_news_scanning` is enabled (disabled by default).
 - Jobs are unique per appid and implement Laravel's ShouldBeUnique, so duplicate jobs for the same appid won't be queued.
-- The `laravel-steam-apps-db.decay_seconds` config adds a small delay inside each job's handler to smoothly pace API calls.
+- API call pacing is handled via a global Redis throttle controlled by `laravel-steam-apps-db.decay_seconds`. When enabled, only one FetchSteamApp job is allowed to run per interval across all workers; excess jobs are released back to the queue to retry shortly.
 
 To process the jobs, make sure you run a queue worker in your application environment:
 
