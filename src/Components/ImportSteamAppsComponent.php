@@ -9,7 +9,6 @@ use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 
 class ImportSteamAppsComponent
@@ -115,5 +114,4 @@ class ImportSteamAppsComponent
             report(new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e));
         }
     }
-
 }
