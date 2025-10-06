@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Redis;
 
 abstract class FetchSteamAppBasicJob implements ShouldBeUnique, ShouldQueue
 {
@@ -36,21 +37,32 @@ abstract class FetchSteamAppBasicJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(): void
     {
-        $startedAt = microtime(true);
-        try {
-            $this->doJob();
-        } catch (Exception $e) {
-            $this->fail($e);
+        $decaySeconds = (int) config('laravel-steam-apps-db.decay_seconds');
+
+        // If throttling is disabled or misconfigured, run immediately
+        if ($decaySeconds <= 0) {
+            try {
+                $this->doJob();
+            } catch (Exception $e) {
+                $this->fail($e);
+            }
+            return;
         }
 
-        $decaySeconds = (int) config('laravel-steam-apps-db.decay_seconds');
-        if ($decaySeconds > 0) {
-            $elapsedMicros = (int) ((microtime(true) - $startedAt) * 1_000_000);
-            $sleepMicros = max(0, ($decaySeconds * 1_000_000) - $elapsedMicros);
-            if ($sleepMicros > 0) {
-                usleep($sleepMicros);
-            }
-        }
+        // Global rate limit across workers via Redis throttle
+        Redis::throttle('laravel-steam-apps-db:throttle')
+            ->allow(1)
+            ->every($decaySeconds)
+            ->then(function () {
+                try {
+                    $this->doJob();
+                } catch (Exception $e) {
+                    $this->fail($e);
+                }
+            }, function () use ($decaySeconds) {
+                // If the rate limit is exceeded, release the job back to the queue
+                return $this->release(max(1, $decaySeconds));
+            });
     }
 
     /**
