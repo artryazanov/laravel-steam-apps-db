@@ -46,6 +46,7 @@ abstract class FetchSteamAppBasicJob implements ShouldBeUnique, ShouldQueue
             } catch (Exception $e) {
                 $this->fail($e);
             }
+
             return;
         }
 
