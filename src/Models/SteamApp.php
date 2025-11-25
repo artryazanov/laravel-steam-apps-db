@@ -205,7 +205,11 @@ class SteamApp extends Model
      */
     public function getHeaderImageAttribute(): string
     {
-        return "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$this->appid}/header.jpg";
+        if (isset($this->detail->header_image)) {
+            return $this->detail->header_image;
+        } else {
+            return "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$this->appid}/header.jpg";
+        }
     }
 
     /**
