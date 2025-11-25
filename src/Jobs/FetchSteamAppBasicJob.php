@@ -65,6 +65,7 @@ abstract class FetchSteamAppBasicJob implements ShouldBeUnique, ShouldQueue
                 if ($sleepMicros > 0) {
                     usleep($sleepMicros);
                 }
+
                 // If the rate limit is exceeded, release the job back to the queue
                 return $this->release();
             });
