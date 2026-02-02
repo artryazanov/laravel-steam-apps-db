@@ -5,7 +5,6 @@ namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Jobs;
 use Artryazanov\LaravelSteamAppsDb\Actions\FetchSteamAppWorkshopItemsAction;
 use Artryazanov\LaravelSteamAppsDb\Actions\ImportSteamAppsAction;
 use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppWorkshopItemsJob;
-use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Services\SteamApiClient;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
 use Illuminate\Support\Facades\Config;
@@ -14,6 +13,11 @@ use Mockery;
 
 class FetchSteamAppWorkshopItemsJobTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Config::set('laravel-steam-apps-db.decay_seconds', 0);
+    }
     public function test_job_executes_action_and_dispatches_next_job_if_cursor_exists()
     {
         Queue::fake();
