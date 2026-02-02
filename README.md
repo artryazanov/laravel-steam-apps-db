@@ -8,8 +8,8 @@ A Laravel package for managing Steam application data in your database. This pac
 ![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/artryazanov/laravel-steam-apps-db/run-tests.yml?branch=main&label=tests)
 ![GitHub Pint Action Status](https://img.shields.io/github/actions/workflow/status/artryazanov/laravel-steam-apps-db/run-pint.yml?branch=main&label=pint)
 [![codecov](https://codecov.io/gh/artryazanov/laravel-steam-apps-db/graph/badge.svg)](https://codecov.io/gh/artryazanov/laravel-steam-apps-db)
-[![PHP Version](https://img.shields.io/badge/php-%3E%3D8.0-8892BF.svg)](https://www.php.net/)
-[![Laravel Version](https://img.shields.io/badge/laravel-10.x%7C11.x%7C12.x-red.svg)](https://laravel.com/)
+[![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-8892BF.svg)](https://www.php.net/)
+[![Laravel Version](https://img.shields.io/badge/laravel-11.x%7C12.x-red.svg)](https://laravel.com/)
 
 ## Introduction
 
@@ -26,8 +26,8 @@ The package handles all the database schema creation and provides a console comm
 
 ### Requirements
 
-- PHP 8.0 or higher
-- Laravel 10.x, 11.x, or 12.x
+- PHP 8.2 or higher
+- Laravel 11.x or 12.x
 
 ### Installation Steps
 
