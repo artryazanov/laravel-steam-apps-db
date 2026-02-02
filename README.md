@@ -2,7 +2,7 @@
 
 A Laravel package for managing Steam application data in your database. This package provides functionality to import Steam apps, fetch detailed information, and retrieve news for Steam games.
 
-[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](http://unlicense.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/artryazanov/laravel-steam-apps-db.svg?style=flat-square)](https://packagist.org/packages/artryazanov/laravel-steam-apps-db)
 [![Total Downloads](https://img.shields.io/packagist/dt/artryazanov/laravel-steam-apps-db.svg?style=flat-square)](https://packagist.org/packages/artryazanov/laravel-steam-apps-db)
 ![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/artryazanov/laravel-steam-apps-db/run-tests.yml?branch=main&label=tests)
@@ -243,4 +243,4 @@ vendor/bin/phpunit
 
 ## License
 
-This package is open-sourced software licensed under the [Unlicense](http://unlicense.org/).
+This package is open-sourced software licensed under the [MIT license](LICENSE).
