@@ -1,6 +1,8 @@
 <?php
 
-namespace Artryazanov\LaravelSteamAppsDb\Components;
+declare(strict_types=1);
+
+namespace Artryazanov\LaravelSteamAppsDb\Actions;
 
 use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
@@ -21,28 +23,26 @@ use Artryazanov\LaravelSteamAppsDb\Models\SteamAppPublisher;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppRating;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppRequirement;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppScreenshot;
+use Artryazanov\LaravelSteamAppsDb\Services\SteamApiClient;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
-class FetchSteamAppDetailsComponent
+class FetchSteamAppDetailsAction
 {
-    /**
-     * The Steam API endpoint for getting app details.
-     *
-     * @var string
-     */
-    private const STEAM_API_URL = 'https://store.steampowered.com/api/appdetails';
+    public function __construct(
+        protected SteamApiClient $steamApiClient
+    ) {}
 
     /**
      * Fetch detailed information about Steam games and store it in the database.
      *
-     * @param  string  $appid  Steam application ID to fetch details for a specific app
+     * @param  int  $appid  Steam application ID to fetch details for a specific app
      *
      * @throws LaravelSteamAppsDbException
      */
-    public function fetchSteamAppDetails(string $appid): void
+    public function execute(int $appid): void
     {
         // Get the specific app by appid
         $app = SteamApp::where('appid', $appid)->first();
@@ -52,8 +52,8 @@ class FetchSteamAppDetailsComponent
         }
 
         try {
-            // Fetch details from Steam API
-            $details = $this->fetchAppDetailsFromApi($app->appid);
+            // Fetch details from Steam API via Client
+            $details = $this->steamApiClient->getAppDetails($app->appid);
 
             // Update the last_details_update field in the SteamApp model
             $app->update(['last_details_update' => Carbon::now()]);
@@ -77,32 +77,6 @@ class FetchSteamAppDetailsComponent
             $errorMessage = "Error processing app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
             throw new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e);
         }
-    }
-
-    /**
-     * Fetch details for a Steam app from the Steam API.
-     *
-     * @throws Exception
-     */
-    private function fetchAppDetailsFromApi(int $appid): ?array
-    {
-        $response = Http::get(self::STEAM_API_URL, [
-            'appids' => $appid,
-            'cc' => 'us',
-            'l' => 'en',
-        ]);
-
-        if (! $response->successful()) {
-            throw new Exception("FetchAppDetailsFromApi, Steam API response status: {$response->status()}");
-        }
-
-        $data = $response->json();
-
-        if (! isset($data[$appid]['success']) || ! $data[$appid]['success'] || ! isset($data[$appid]['data'])) {
-            throw new Exception("FetchAppDetailsFromApi, Steam API response body: {$response->body()}");
-        }
-
-        return $data[$appid]['data'];
     }
 
     /**
@@ -395,9 +369,6 @@ class FetchSteamAppDetailsComponent
     private function storeDlcs(SteamApp $app, array $dlcIds): void
     {
         $dlcIds = array_values(array_unique(array_filter($dlcIds, fn ($v) => is_numeric($v))));
-        $existing = SteamAppDlc::where('steam_app_id', $app->id)->get();
-        $existingIds = $existing->pluck('dlc_appid')->toArray();
-
         // Delete missing
         SteamAppDlc::where('steam_app_id', $app->id)
             ->whereNotIn('dlc_appid', $dlcIds)

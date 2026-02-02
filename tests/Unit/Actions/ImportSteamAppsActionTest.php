@@ -1,18 +1,19 @@
 <?php
 
-namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Components;
+namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Actions;
 
-use Artryazanov\LaravelSteamAppsDb\Components\ImportSteamAppsComponent;
+use Artryazanov\LaravelSteamAppsDb\Actions\ImportSteamAppsAction;
 use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppDetailsJob;
 use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
+use Artryazanov\LaravelSteamAppsDb\Services\SteamApiClient;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-class ImportSteamAppsComponentTest extends TestCase
+class ImportSteamAppsActionTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -42,7 +43,9 @@ class ImportSteamAppsComponentTest extends TestCase
 
         Bus::fake();
         $this->httpFakeSingleApp();
-        (new ImportSteamAppsComponent)->importSteamApps();
+
+        $action = new ImportSteamAppsAction(new SteamApiClient);
+        $action->execute();
 
         // Details should still be dispatched
         Bus::assertDispatched(FetchSteamAppDetailsJob::class);
@@ -74,8 +77,9 @@ class ImportSteamAppsComponentTest extends TestCase
         Bus::fake();
         $this->httpFakeSingleApp();
 
-        // Execute component directly (uses NullCommand internally)
-        (new ImportSteamAppsComponent)->importSteamApps();
+        // Execute action directly
+        $action = new ImportSteamAppsAction(new SteamApiClient);
+        $action->execute();
     }
 
     public function test_dispatch_when_last_update_is_null(): void
@@ -239,7 +243,9 @@ class ImportSteamAppsComponentTest extends TestCase
 
         Bus::fake();
         $this->httpFakeSingleApp();
-        (new ImportSteamAppsComponent)->importSteamApps();
+
+        $action = new ImportSteamAppsAction(new SteamApiClient);
+        $action->execute();
 
         // Both jobs should be on the configured queue
         Bus::assertDispatched(FetchSteamAppDetailsJob::class, function ($job) {
@@ -264,7 +270,9 @@ class ImportSteamAppsComponentTest extends TestCase
 
         Bus::fake();
         $this->httpFakeSingleApp();
-        (new ImportSteamAppsComponent)->importSteamApps();
+
+        $action = new ImportSteamAppsAction(new SteamApiClient);
+        $action->execute();
 
         Bus::assertDispatched(FetchSteamAppDetailsJob::class, function ($job) {
             return ($job->queue ?? null) === 'default';

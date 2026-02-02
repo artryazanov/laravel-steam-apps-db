@@ -3,7 +3,11 @@
 A Laravel package for managing Steam application data in your database. This package provides functionality to import Steam apps, fetch detailed information, and retrieve news for Steam games.
 
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](http://unlicense.org/)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/artryazanov/laravel-steam-apps-db.svg?style=flat-square)](https://packagist.org/packages/artryazanov/laravel-steam-apps-db)
+[![Total Downloads](https://img.shields.io/packagist/dt/artryazanov/laravel-steam-apps-db.svg?style=flat-square)](https://packagist.org/packages/artryazanov/laravel-steam-apps-db)
 ![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/artryazanov/laravel-steam-apps-db/run-tests.yml?branch=main&label=tests)
+![GitHub Pint Action Status](https://img.shields.io/github/actions/workflow/status/artryazanov/laravel-steam-apps-db/run-pint.yml?branch=main&label=pint)
+[![codecov](https://codecov.io/gh/artryazanov/laravel-steam-apps-db/graph/badge.svg)](https://codecov.io/gh/artryazanov/laravel-steam-apps-db)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.0-8892BF.svg)](https://www.php.net/)
 [![Laravel Version](https://img.shields.io/badge/laravel-10.x%7C11.x%7C12.x-red.svg)](https://laravel.com/)
 
@@ -63,7 +67,7 @@ After saving each app, this command dispatches queued jobs to fetch the app's de
 
 - `laravel-steam-apps-db.enable_news_scanning`: Controls whether the package dispatches jobs to fetch Steam news. Default is `false` (disabled). Set via env `LSADB_ENABLE_NEWS_SCANNING=true` or publish and edit the config.
 - `laravel-steam-apps-db.queue`: Queue name for dispatched jobs (e.g., `high`, `default`, `low`). Default is `default`. Set via env `LSADB_QUEUE=default` or publish and edit the config.
-- `laravel-steam-apps-db.decay_seconds`: Global rate limit interval (in seconds) enforced via Redis throttle for FetchSteamApp* jobs. When > 0, jobs across all workers will run at most once per interval; when 0 or less, throttling is disabled. Default is `1`. Set via env `LARAVEL_STEAM_APPS_DB_DECAY_SECONDS=1`.
+- `laravel-steam-apps-db.decay_seconds`: Global rate limit interval (in seconds) enforced via Redis throttle for FetchSteamApp* jobs. When > 0, jobs across all workers will run at most once per interval; when 0 or less, throttling is disabled. Default is `1`. Set via env `LSADB_DECAY_SECONDS=1`.
 
 Note: Throttling requires Redis to be configured in your application (used by Laravel's `Redis::throttle`). If you don't use Redis, set `decay_seconds` to `0` to disable throttling.
 
@@ -204,6 +208,24 @@ The package creates the following tables:
 21. `steam_app_achievements_highlighted` - Highlighted achievements
 22. `steam_app_content_descriptor_ids` - Content descriptor ids
 23. `steam_app_ratings` - Ratings by boards
+
+## Architecture
+
+This package uses a modular architecture with **Actions** and **Services** to separate concerns:
+
+- **Services**: `SteamApiClient` handles all direct interactions with the Steam API, including rate limiting and error handling.
+- **Actions**: Contain the core business logic (e.g., `FetchSteamAppDetailsAction`, `ImportSteamAppsAction`).
+- **Jobs**: Thin wrappers around Actions that handle queuing and uniqueness logic.
+
+If you need to fetch dataprogrammatically without using the queue, you can resolve the Actions from the container:
+
+```php
+use Artryazanov\LaravelSteamAppsDb\Actions\FetchSteamAppDetailsAction;
+
+// Fetch and store details for a specific app immediately
+$action = app(FetchSteamAppDetailsAction::class);
+$action->execute(570);
+```
 
 ## Testing
 

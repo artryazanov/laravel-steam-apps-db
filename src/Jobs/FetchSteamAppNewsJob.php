@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Jobs;
 
-use Artryazanov\LaravelSteamAppsDb\Components\FetchSteamAppNewsComponent;
+use Artryazanov\LaravelSteamAppsDb\Actions\FetchSteamAppNewsAction;
 use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 
 class FetchSteamAppNewsJob extends FetchSteamAppBasicJob
@@ -12,7 +14,7 @@ class FetchSteamAppNewsJob extends FetchSteamAppBasicJob
      */
     protected function doJob(): void
     {
-        $component = new FetchSteamAppNewsComponent;
-        $component->fetchSteamAppNews((string) $this->appid);
+        $action = app(FetchSteamAppNewsAction::class);
+        $action->execute((int) $this->appid);
     }
 }

@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Console;
 
-use Artryazanov\LaravelSteamAppsDb\Components\ImportSteamAppsComponent;
+use Artryazanov\LaravelSteamAppsDb\Actions\ImportSteamAppsAction;
 use Illuminate\Console\Command;
 
 class ImportSteamAppsCommand extends Command
@@ -16,10 +18,14 @@ class ImportSteamAppsCommand extends Command
 
     /**
      * The console command description.
-     *
-     * @var string
      */
     protected $description = 'Import Steam apps from the Steam API and store them in the database';
+
+    public function __construct(
+        protected ImportSteamAppsAction $importSteamAppsAction
+    ) {
+        parent::__construct();
+    }
 
     /**
      * Execute the console command.
@@ -28,8 +34,10 @@ class ImportSteamAppsCommand extends Command
     {
         $this->info('Starting import of Steam apps...');
 
-        $importComponent = new ImportSteamAppsComponent;
-        $importComponent->importSteamApps($this);
+        $this->importSteamAppsAction->execute(
+            infoCallback: fn (string $msg) => $this->info($msg),
+            errorCallback: fn (string $msg) => $this->error($msg),
+        );
 
         $this->info('Import of Steam apps completed!');
     }

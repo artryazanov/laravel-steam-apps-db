@@ -1,8 +1,8 @@
 <?php
 
-namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Components;
+namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Actions;
 
-use Artryazanov\LaravelSteamAppsDb\Components\FetchSteamAppDetailsComponent;
+use Artryazanov\LaravelSteamAppsDb\Actions\FetchSteamAppDetailsAction;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppMovie;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppScreenshot;
@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use ReflectionMethod;
 
-class FetchSteamAppDetailsComponentTest extends TestCase
+class FetchSteamAppDetailsActionTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -81,11 +81,11 @@ class FetchSteamAppDetailsComponentTest extends TestCase
             ],
         ];
 
-        // Create an instance of the component and call the storeScreenshots method
-        $component = new FetchSteamAppDetailsComponent;
-        $method = new ReflectionMethod($component, 'storeScreenshots');
+        // Create an instance of the action via container
+        $action = app(FetchSteamAppDetailsAction::class);
+        $method = new ReflectionMethod($action, 'storeScreenshots');
         $method->setAccessible(true);
-        $method->invoke($component, $app, $newScreenshots);
+        $method->invoke($action, $app, $newScreenshots);
 
         // Verify that there are still 3 screenshots (2 kept, 1 new)
         $this->assertEquals(3, SteamAppScreenshot::where('steam_app_id', $app->id)->count());
@@ -247,11 +247,11 @@ class FetchSteamAppDetailsComponentTest extends TestCase
             ],
         ];
 
-        // Create an instance of the component and call the storeMovies method
-        $component = new FetchSteamAppDetailsComponent;
-        $method = new ReflectionMethod($component, 'storeMovies');
+        // Create an instance of the action via container
+        $action = app(FetchSteamAppDetailsAction::class);
+        $method = new ReflectionMethod($action, 'storeMovies');
         $method->setAccessible(true);
-        $method->invoke($component, $app, $newMovies);
+        $method->invoke($action, $app, $newMovies);
 
         // Verify that there are still 3 movies (2 kept, 1 new)
         $this->assertEquals(3, SteamAppMovie::where('steam_app_id', $app->id)->count());
@@ -304,7 +304,7 @@ class FetchSteamAppDetailsComponentTest extends TestCase
     }
 
     /**
-     * Test that the fetchSteamAppDetails method correctly fetches details for a specific app by appid.
+     * Test that the execute method correctly fetches details for a specific app by appid.
      */
     public function test_fetch_steam_app_details_for_specific_app(): void
     {
@@ -358,11 +358,11 @@ class FetchSteamAppDetailsComponentTest extends TestCase
             ]),
         ]);
 
-        // Create an instance of the component
-        $component = new FetchSteamAppDetailsComponent;
+        // Create an instance of the action via container
+        $action = app(FetchSteamAppDetailsAction::class);
 
-        // Call the fetchSteamAppDetails method with a specific appid
-        $component->fetchSteamAppDetails('123456');
+        // Call the execute method with a specific appid
+        $action->execute(123456);
 
         // Assert that the details were stored for the target app
         $this->assertDatabaseHas('steam_app_details', [
@@ -426,8 +426,8 @@ class FetchSteamAppDetailsComponentTest extends TestCase
         ]);
 
         // Execute
-        $component = new FetchSteamAppDetailsComponent;
-        $component->fetchSteamAppDetails('123456');
+        $action = app(FetchSteamAppDetailsAction::class);
+        $action->execute(123456);
 
         // Assert DB stored with release_date null and coming_soon true
         $this->assertDatabaseHas('steam_app_details', [
@@ -485,8 +485,8 @@ class FetchSteamAppDetailsComponentTest extends TestCase
         ]);
 
         // Execute
-        $component = new FetchSteamAppDetailsComponent;
-        $component->fetchSteamAppDetails('654321');
+        $action = app(FetchSteamAppDetailsAction::class);
+        $action->execute(654321);
 
         // Assert DB stored with release_date null and coming_soon false
         $this->assertDatabaseHas('steam_app_details', [
@@ -539,8 +539,8 @@ class FetchSteamAppDetailsComponentTest extends TestCase
             '*' => Http::response('', 404),
         ]);
 
-        $component = new FetchSteamAppDetailsComponent;
-        $component->fetchSteamAppDetails((string) $appid);
+        $action = app(FetchSteamAppDetailsAction::class);
+        $action->execute((int) $appid);
 
         $this->assertDatabaseHas('steam_app_details', [
             'steam_app_id' => $app->id,
@@ -617,8 +617,8 @@ class FetchSteamAppDetailsComponentTest extends TestCase
             'shared.akamai.steamstatic.com/*' => Http::response('', 404),
         ]);
 
-        $component = new FetchSteamAppDetailsComponent;
-        $component->fetchSteamAppDetails((string) $appid);
+        $action = app(FetchSteamAppDetailsAction::class);
+        $action->execute((int) $appid);
 
         $detail = \Artryazanov\LaravelSteamAppsDb\Models\SteamAppDetail::where('steam_app_id', $app->id)->firstOrFail();
 
@@ -738,8 +738,8 @@ class FetchSteamAppDetailsComponentTest extends TestCase
             'shared.akamai.steamstatic.com/*' => Http::response('', 404),
         ]);
 
-        $component = new FetchSteamAppDetailsComponent;
-        $component->fetchSteamAppDetails((string) $appid);
+        $action = app(FetchSteamAppDetailsAction::class);
+        $action->execute((int) $appid);
 
         $this->assertDatabaseHas('steam_app_details', [
             'steam_app_id' => $app->id,

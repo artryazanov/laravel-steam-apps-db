@@ -1,8 +1,8 @@
 <?php
 
-namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Components;
+namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Actions;
 
-use Artryazanov\LaravelSteamAppsDb\Components\FetchSteamAppNewsComponent;
+use Artryazanov\LaravelSteamAppsDb\Actions\FetchSteamAppNewsAction;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppNews;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use ReflectionMethod;
 
-class FetchSteamAppNewsComponentTest extends TestCase
+class FetchSteamAppNewsActionTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -118,10 +118,10 @@ class FetchSteamAppNewsComponentTest extends TestCase
         ];
 
         // Create an instance of the component and call the storeSteamAppNews method
-        $component = new FetchSteamAppNewsComponent;
-        $method = new ReflectionMethod($component, 'storeSteamAppNews');
+        $action = app(FetchSteamAppNewsAction::class);
+        $method = new ReflectionMethod($action, 'storeSteamAppNews');
         $method->setAccessible(true);
-        $method->invoke($component, $app, $newNewsItems);
+        $method->invoke($action, $app, $newNewsItems);
 
         // Verify that there are now 3 news items (2 existing + 1 new)
         $this->assertEquals(3, SteamAppNews::where('steam_app_id', $app->id)->count());
@@ -172,50 +172,9 @@ class FetchSteamAppNewsComponentTest extends TestCase
     }
 
     /**
-     * Test that the fetchNewsFromApi method correctly fetches news from the Steam API.
-     */
-    public function test_fetch_news_from_api(): void
-    {
-        // Mock the HTTP response
-        Http::fake([
-            'api.steampowered.com/ISteamNews/GetNewsForApp/v0002/*' => Http::response([
-                'appnews' => [
-                    'appid' => 570,
-                    'newsitems' => [
-                        [
-                            'gid' => '1',
-                            'title' => 'Test News',
-                            'url' => 'http://example.com/news',
-                            'is_external_url' => true,
-                            'author' => 'Test Author',
-                            'contents' => 'Test Contents',
-                            'feedlabel' => 'Test Feed',
-                            'date' => 1700000000,
-                            'feedname' => 'Test Feedname',
-                            'feed_type' => 0,
-                        ],
-                    ],
-                ],
-            ]),
-        ]);
-
-        // Create an instance of the component and call the fetchNewsFromApi method
-        $component = new FetchSteamAppNewsComponent;
-        $method = new ReflectionMethod($component, 'fetchNewsFromApi');
-        $method->setAccessible(true);
-        $result = $method->invoke($component, 570);
-
-        // Verify the result
-        $this->assertIsArray($result);
-        $this->assertEquals(570, $result['appid']);
-        $this->assertCount(1, $result['newsitems']);
-        $this->assertEquals('Test News', $result['newsitems'][0]['title']);
-    }
-
-    /**
      * Test that the fetchSteamAppNews method correctly fetches and stores news.
      */
-    public function test_fetch_steam_app_news(): void
+    public function test_execute_fetches_and_stores_steam_app_news(): void
     {
         // Create a Steam app
         $steamApp = SteamApp::factory()->create([
@@ -223,7 +182,7 @@ class FetchSteamAppNewsComponentTest extends TestCase
             'name' => 'Test App',
         ]);
 
-        // Mock the HTTP response
+        // Mock the HTTP response through the Client (or strictly speaking, Http proxy)
         Http::fake([
             'api.steampowered.com/ISteamNews/GetNewsForApp/v0002/*' => Http::response([
                 'appnews' => [
@@ -246,9 +205,9 @@ class FetchSteamAppNewsComponentTest extends TestCase
             ]),
         ]);
 
-        // Create an instance of the component and call the fetchSteamAppNews method
-        $component = new FetchSteamAppNewsComponent;
-        $component->fetchSteamAppNews(570);
+        // Create an instance of the action via container
+        $action = app(FetchSteamAppNewsAction::class);
+        $action->execute(570);
 
         // Verify that the news was stored
         $this->assertDatabaseHas('steam_app_news', [

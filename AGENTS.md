@@ -46,7 +46,7 @@ This document provides guidance for AI coding agents contributing to this reposi
       }
   }
   ```
-- See: `tests/Unit/Components/ImportSteamAppsComponentTest.php` and `tests/Unit/Jobs/FetchSteamAppJobsUniquenessTest.php` for examples.
+- See: `tests/Unit/Actions/ImportSteamAppsActionTest.php` and `tests/Unit/Jobs/FetchSteamAppJobsUniquenessTest.php` for examples.
 
 ## Running and Updating Tests
 - Prefer adding targeted tests near existing ones. Mirror established patterns:
@@ -78,7 +78,8 @@ This document provides guidance for AI coding agents contributing to this reposi
 - Package provider: `LaravelSteamAppsDbServiceProvider`.
 - Primary areas:
   - Jobs: `src/Jobs/*`
-  - Components: `src/Components/*`
+  - Actions: `src/Actions/*`
+  - Services: `src/Services/*`
   - Models: `src/Models/*`
   - Tests: `tests/*`
 

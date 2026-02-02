@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Artryazanov\LaravelSteamAppsDb\Database\Factories\SteamAppFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -203,20 +206,26 @@ class SteamApp extends Model
     /**
      * Get the header image URL for the Steam application.
      */
-    public function getHeaderImageAttribute(): string
+    protected function headerImage(): Attribute
     {
-        if (isset($this->detail->header_image)) {
-            return $this->detail->header_image;
-        } else {
-            return "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$this->appid}/header.jpg";
-        }
+        return Attribute::make(
+            get: function () {
+                if (isset($this->detail->header_image)) {
+                    return $this->detail->header_image;
+                }
+
+                return "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{$this->appid}/header.jpg";
+            }
+        );
     }
 
     /**
      * Generate the URL to the Steam store page of the application.
      */
-    public function getSteamAppUrlAttribute(): string
+    protected function steamAppUrl(): Attribute
     {
-        return "https://store.steampowered.com/app/{$this->appid}";
+        return Attribute::make(
+            get: fn () => "https://store.steampowered.com/app/{$this->appid}",
+        );
     }
 }

@@ -1,32 +1,32 @@
 <?php
 
-namespace Artryazanov\LaravelSteamAppsDb\Components;
+declare(strict_types=1);
+
+namespace Artryazanov\LaravelSteamAppsDb\Actions;
 
 use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppNews;
+use Artryazanov\LaravelSteamAppsDb\Services\SteamApiClient;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
-class FetchSteamAppNewsComponent
+class FetchSteamAppNewsAction
 {
-    /**
-     * The Steam API endpoint for getting app news.
-     *
-     * @var string
-     */
-    private const STEAM_API_URL = 'https://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/';
+    public function __construct(
+        protected SteamApiClient $steamApiClient
+    ) {}
 
     /**
      * Fetch the latest news for Steam apps and store them in the database.
      *
-     * @param  string  $appid  Specific Steam app ID to fetch news for
+     * @param  int  $appid  Specific Steam app ID to fetch news for
      *
      * @throws LaravelSteamAppsDbException
      */
-    public function fetchSteamAppNews(string $appid): void
+    public function execute(int $appid): void
     {
         // Get the specific app by appid
         $app = SteamApp::where('appid', $appid)->first();
@@ -37,7 +37,7 @@ class FetchSteamAppNewsComponent
 
         try {
             // Fetch news from Steam API
-            $news = $this->fetchNewsFromApi($app->appid);
+            $news = $this->steamApiClient->getAppNews($app->appid);
 
             // Update the last_news_update field in the SteamApp model
             $app->update(['last_news_update' => Carbon::now()]);
@@ -45,7 +45,7 @@ class FetchSteamAppNewsComponent
             // Store news in the database
             DB::beginTransaction();
             try {
-                $this->storeSteamAppNews($app, $news['newsitems']);
+                $this->storeSteamAppNews($app, $news['newsitems'] ?? []);
                 DB::commit();
             } catch (Exception $e) {
                 DB::rollBack();
@@ -54,35 +54,10 @@ class FetchSteamAppNewsComponent
             }
         } catch (Exception $e) {
             $errorMessage = "Error processing app {$app->name} (appid: {$app->appid}): {$e->getMessage()}";
+            // Log the error instead of stopping everything?
+            // The original component re-threw as LaravelSteamAppsDbException
             throw new LaravelSteamAppsDbException($errorMessage, $e->getCode(), $e);
         }
-    }
-
-    /**
-     * Fetch news for a Steam app from the Steam API.
-     *
-     * @throws Exception
-     */
-    private function fetchNewsFromApi(int $appid): ?array
-    {
-        $response = Http::get(self::STEAM_API_URL, [
-            'appid' => $appid,
-            'count' => 100,
-            'maxlength' => 0,
-            'format' => 'json',
-        ]);
-
-        if (! $response->successful()) {
-            throw new Exception("FetchNewsFromApi, Steam API response status: {$response->status()}");
-        }
-
-        $data = $response->json();
-
-        if (! isset($data['appnews']) || ! isset($data['appnews']['newsitems'])) {
-            throw new Exception("FetchNewsFromApi, Steam API response body: {$response->body()}");
-        }
-
-        return $data['appnews'];
     }
 
     /**
