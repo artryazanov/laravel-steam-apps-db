@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
+use Artryazanov\LaravelSteamAppsDb\Models\SteamAppWorkshopItem;
 
 /**
  * Artryazanov\LaravelSteamAppsDb\Models\SteamApp
@@ -35,6 +36,7 @@ use Illuminate\Support\Carbon;
  * @property-read SteamAppPublisher[] $publishers The publishers for this app
  * @property-read SteamAppPriceInfo|null $priceInfo The price information for this app
  * @property-read SteamAppNews[] $news The news items for this app
+ * @property-read SteamAppWorkshopItem[] $workshopItems The workshop items for this app
  * @property-read string $headerImage URL to the header image of the Steam application
  * @property-read string $steamAppUrl URL to the Steam store page of the application
  *
@@ -201,6 +203,11 @@ class SteamApp extends Model
     public function news(): HasMany
     {
         return $this->hasMany(SteamAppNews::class, 'steam_app_id', 'id');
+    }
+
+    public function workshopItems(): HasMany
+    {
+        return $this->hasMany(SteamAppWorkshopItem::class, 'steam_app_id', 'id');
     }
 
     /**

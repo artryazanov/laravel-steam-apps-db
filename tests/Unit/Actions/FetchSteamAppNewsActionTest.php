@@ -184,7 +184,7 @@ class FetchSteamAppNewsActionTest extends TestCase
 
         // Mock the HTTP response through the Client (or strictly speaking, Http proxy)
         Http::fake([
-            'api.steampowered.com/ISteamNews/GetNewsForApp/v0002/*' => Http::response([
+            'api.steampowered.com/ISteamNews/GetNewsForApp/v2/*' => Http::response([
                 'appnews' => [
                     'appid' => 570,
                     'newsitems' => [

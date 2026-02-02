@@ -66,6 +66,7 @@ After saving each app, this command dispatches queued jobs to fetch the app's de
 ### Configuration
 
 - `laravel-steam-apps-db.enable_news_scanning`: Controls whether the package dispatches jobs to fetch Steam news. Default is `false` (disabled). Set via env `LSADB_ENABLE_NEWS_SCANNING=true` or publish and edit the config.
+- `laravel-steam-apps-db.enable_workshop_scanning`: Controls whether the package dispatches jobs to fetch Steam Workshop items. Default is `false` (disabled). Set via env `LSADB_ENABLE_WORKSHOP_SCANNING=true` or publish and edit the config.
 - `laravel-steam-apps-db.queue`: Queue name for dispatched jobs (e.g., `high`, `default`, `low`). Default is `default`. Set via env `LSADB_QUEUE=default` or publish and edit the config.
 - `laravel-steam-apps-db.decay_seconds`: Global rate limit interval (in seconds) enforced via Redis throttle for FetchSteamApp* jobs. When > 0, jobs across all workers will run at most once per interval; when 0 or less, throttling is disabled. Default is `1`. Set via env `LSADB_DECAY_SECONDS=1`.
 
@@ -83,10 +84,12 @@ Starting from the current version, fetching details and news is performed by que
 
 - `Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppDetailsJob`
 - `Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob`
+- `Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppWorkshopItemsJob`
 
 Additional notes:
 - Details job is always dispatched for every app during import.
 - News job is dispatched only when `laravel-steam-apps-db.enable_news_scanning` is enabled (disabled by default).
+- Workshop job is dispatched only when `laravel-steam-apps-db.enable_workshop_scanning` is enabled (disabled by default).
 - Jobs are unique per appid and implement Laravel's ShouldBeUnique, so duplicate jobs for the same appid won't be queued.
 - API call pacing is handled via a global Redis throttle controlled by `laravel-steam-apps-db.decay_seconds`. When enabled, only one FetchSteamApp job is allowed to run per interval across all workers; excess jobs are released back to the queue to retry shortly.
 
@@ -109,6 +112,9 @@ FetchSteamAppDetailsJob::dispatch(570);
 // Note: News scanning is optional. Ensure it's enabled in config
 // or dispatch the job explicitly as needed.
 FetchSteamAppNewsJob::dispatch(570);
+// Workshop items (optional)
+use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppWorkshopItemsJob;
+FetchSteamAppWorkshopItemsJob::dispatch(570);
 ```
 
 Note: Previous console commands `steam:fetch-app-details` and `steam:fetch-app-news` have been replaced by the queued jobs and are no longer required.
@@ -122,6 +128,7 @@ The package provides several Eloquent models to interact with the stored data:
 - **SteamApp**: The core model representing a Steam application
 - **SteamAppDetail**: Detailed information about a Steam app
 - **SteamAppNews**: News articles for a Steam app
+- **SteamAppWorkshopItem**: Workshop items for a Steam app
 
 #### Related Models
 
@@ -208,6 +215,7 @@ The package creates the following tables:
 21. `steam_app_achievements_highlighted` - Highlighted achievements
 22. `steam_app_content_descriptor_ids` - Content descriptor ids
 23. `steam_app_ratings` - Ratings by boards
+24. `steam_app_workshop_items` - Workshop items for each app
 
 ## Architecture
 

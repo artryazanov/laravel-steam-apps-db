@@ -7,6 +7,7 @@ namespace Artryazanov\LaravelSteamAppsDb\Actions;
 use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppDetailsJob;
 use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob;
+use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppWorkshopItemsJob;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Services\SteamApiClient;
 use Exception;
@@ -38,7 +39,7 @@ class ImportSteamAppsAction
             $infoCallback("Found {$totalApps} apps in the Steam API response");
 
             // Process the apps in chunks to avoid memory issues
-            $chunkSize = 1000;
+            $chunkSize = (int) config('laravel-steam-apps-db.chunk_size', 500);
             $chunks = array_chunk($apps, $chunkSize);
 
             $infoCallback('Processing apps in chunks of '.$chunkSize);
@@ -48,6 +49,7 @@ class ImportSteamAppsAction
             $updated = 0;
             $queue = (string) config('laravel-steam-apps-db.queue', 'default');
             $enableNewsScanning = (bool) config('laravel-steam-apps-db.enable_news_scanning', false);
+            $enableWorkshopScanning = (bool) config('laravel-steam-apps-db.enable_workshop_scanning', false);
 
             foreach ($chunks as $index => $chunk) {
                 $infoCallback('Processing chunk '.($index + 1).' of '.count($chunks));
@@ -76,6 +78,10 @@ class ImportSteamAppsAction
 
                         if ($enableNewsScanning) {
                             FetchSteamAppNewsJob::dispatch((int) $steamApp->appid)->onQueue($queue);
+                        }
+
+                        if ($enableWorkshopScanning) {
+                            FetchSteamAppWorkshopItemsJob::dispatch((int) $steamApp->appid)->onQueue($queue);
                         }
                     } catch (Exception $e) {
                         $errorCallback("Failed to dispatch jobs for appid {$steamApp->appid}: {$e->getMessage()}");

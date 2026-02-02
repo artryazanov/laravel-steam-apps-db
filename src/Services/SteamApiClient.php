@@ -22,7 +22,9 @@ class SteamApiClient
     /**
      * The Steam API endpoint for getting app news.
      */
-    private const STEAM_NEWS_API_URL = 'https://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/';
+    private const STEAM_APP_NEWS_URL = 'https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/';
+    private const STEAM_WORKSHOP_QUERY_URL = 'https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/';
+    private const STEAM_REMOTE_STORAGE_URL = 'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/';
 
     /**
      * Fetch the list of all Steam apps.
@@ -84,7 +86,7 @@ class SteamApiClient
      */
     public function getAppNews(int $appid): array
     {
-        $response = Http::get(self::STEAM_NEWS_API_URL, [
+        $response = Http::get(self::STEAM_APP_NEWS_URL, [
             'appid' => $appid,
             'count' => 100,
             'maxlength' => 0,

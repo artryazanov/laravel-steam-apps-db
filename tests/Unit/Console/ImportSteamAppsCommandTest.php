@@ -44,7 +44,7 @@ class ImportSteamAppsCommandTest extends TestCase
             ->expectsOutputToContain('Starting import of Steam apps...')
             ->expectsOutputToContain('Fetching data from Steam API...')
             ->expectsOutputToContain('Found 3 apps in the Steam API response')
-            ->expectsOutputToContain('Processing apps in chunks of 1000')
+            ->expectsOutputToContain('Processing apps in chunks of 500')
             ->expectsOutputToContain('Processing chunk 1 of 1')
             ->expectsOutputToContain('Processed 3 of 3 apps')
             ->expectsOutputToContain('Import completed: 3 apps created, 0 apps updated')
