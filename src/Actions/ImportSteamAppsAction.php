@@ -22,11 +22,17 @@ class ImportSteamAppsAction
     /**
      * Import Steam apps from the Steam API and store them in the database.
      *
-     * @param  callable(string): void  $infoCallback
-     * @param  callable(string): void  $errorCallback
+     * @param  callable(string): void|null  $infoCallback
+     * @param  callable(string): void|null  $errorCallback
+     * @param  string|null  $titleFilter  Optional title filter to import only matching apps
+     * @param  bool  $exactMatch  Whether titleFilter requires an exact case-insensitive match
      */
-    public function execute(?callable $infoCallback = null, ?callable $errorCallback = null): void
-    {
+    public function execute(
+        ?callable $infoCallback = null,
+        ?callable $errorCallback = null,
+        ?string $titleFilter = null,
+        bool $exactMatch = false,
+    ): void {
         $infoCallback ??= fn (string $msg) => Log::info($msg);
         $errorCallback ??= fn (string $msg) => Log::error($msg);
 
@@ -34,12 +40,29 @@ class ImportSteamAppsAction
             $infoCallback('Fetching data from Steam API...');
 
             $apps = $this->steamApiClient->getAppList();
+
+            if ($titleFilter !== null && trim($titleFilter) !== '') {
+                $trimmedFilter = trim($titleFilter);
+                $normalizedFilter = mb_strtolower($trimmedFilter);
+
+                $apps = array_values(array_filter($apps, function (array $app) use ($trimmedFilter, $normalizedFilter, $exactMatch): bool {
+                    $name = isset($app['name']) ? trim((string) $app['name']) : '';
+                    if ($name === '') {
+                        return false;
+                    }
+
+                    return $exactMatch
+                        ? mb_strtolower($name) === $normalizedFilter
+                        : mb_stripos($name, $trimmedFilter) !== false;
+                }));
+            }
+
             $totalApps = count($apps);
 
             $infoCallback("Found {$totalApps} apps in the Steam API response");
 
             // Process the apps in chunks to avoid memory issues
-            $chunkSize = (int) config('laravel-steam-apps-db.chunk_size', 500);
+            $chunkSize = max(1, (int) config('laravel-steam-apps-db.chunk_size', 500));
             $chunks = array_chunk($apps, $chunkSize);
 
             $infoCallback('Processing apps in chunks of '.$chunkSize);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Illuminate\Database\Eloquent\Builder;
@@ -68,6 +70,12 @@ class SteamAppWorkshopItem extends Model
     ];
 
     protected $casts = [
+        'publishedfileid' => 'integer',
+        'file_size' => 'integer',
+        'views' => 'integer',
+        'subscriptions' => 'integer',
+        'favorited' => 'integer',
+        'num_comments_public' => 'integer',
         'time_created' => 'datetime',
         'time_updated' => 'datetime',
         'tags' => 'array',

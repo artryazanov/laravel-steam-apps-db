@@ -3,17 +3,13 @@
 namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Actions;
 
 use Artryazanov\LaravelSteamAppsDb\Actions\FetchSteamAppWorkshopItemsAction;
-use Artryazanov\LaravelSteamAppsDb\Actions\ImportSteamAppsAction;
-use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppWorkshopItemsJob;
+use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppWorkshopItem;
 use Artryazanov\LaravelSteamAppsDb\Services\SteamApiClient;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Queue;
 use Mockery;
 
 class FetchSteamAppWorkshopItemsActionTest extends TestCase
@@ -35,7 +31,7 @@ class FetchSteamAppWorkshopItemsActionTest extends TestCase
 
         // 2. Mock SteamApiClient
         $mockClient = Mockery::mock(SteamApiClient::class);
-        
+
         // Mock getAppWorkshopItems (QueryFiles)
         $mockClient->shouldReceive('getAppWorkshopItems')
             ->once()
@@ -52,7 +48,7 @@ class FetchSteamAppWorkshopItemsActionTest extends TestCase
                         'publishedfileid' => '67890',
                         'title' => 'Another Item',
                         'result' => 1,
-                    ]
+                    ],
                 ],
                 'next_cursor' => 'cursor_next_page',
             ]);
@@ -74,7 +70,7 @@ class FetchSteamAppWorkshopItemsActionTest extends TestCase
                     'publishedfileid' => '67890',
                     'title' => 'Another Item Full',
                     'description' => 'Desc 2',
-                ]
+                ],
             ]);
 
         // 3. Bind Mock
@@ -99,7 +95,7 @@ class FetchSteamAppWorkshopItemsActionTest extends TestCase
         // Verify tags (arrays need specific check or retrieval)
         $item = SteamAppWorkshopItem::where('publishedfileid', '12345')->first();
         $this->assertEquals(['Addon', 'Map'], $item->tags);
-        
+
         $this->assertDatabaseHas('steam_app_workshop_items', [
             'publishedfileid' => '67890',
             'description' => 'Desc 2',
@@ -114,7 +110,7 @@ class FetchSteamAppWorkshopItemsActionTest extends TestCase
         $mockClient->shouldReceive('getAppWorkshopItems')
             ->once()
             ->andReturn(['publishedfiledetails' => []]);
-        
+
         $this->app->instance(SteamApiClient::class, $mockClient);
 
         $action = app(FetchSteamAppWorkshopItemsAction::class);
@@ -122,5 +118,117 @@ class FetchSteamAppWorkshopItemsActionTest extends TestCase
 
         $this->assertNull($result);
         $this->assertDatabaseCount('steam_app_workshop_items', 0);
+    }
+
+    public function test_it_fetches_workshop_items_via_http_fake_with_real_client(): void
+    {
+        $steamApp = SteamApp::factory()->create([
+            'appid' => 4000,
+            'name' => 'Garrys Mod',
+        ]);
+
+        Http::fake([
+            'api.steampowered.com/IPublishedFileService/QueryFiles/v1/*' => Http::response([
+                'response' => [
+                    'publishedfiledetails' => [
+                        [
+                            'publishedfileid' => '99999',
+                            'title' => 'HTTP Workshop Item',
+                            'result' => 1,
+                            'views' => 42,
+                        ],
+                    ],
+                    'next_cursor' => 'cursor_page_2',
+                ],
+            ], 200),
+            'api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/' => Http::response([
+                'response' => [
+                    'publishedfiledetails' => [
+                        [
+                            'publishedfileid' => '99999',
+                            'title' => 'HTTP Workshop Item',
+                            'description' => 'Detailed Body',
+                            'file_size' => 2048,
+                            'creator' => '76561198000000002',
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $action = app(FetchSteamAppWorkshopItemsAction::class);
+        $nextCursor = $action->execute(4000, '*');
+
+        $this->assertSame('cursor_page_2', $nextCursor);
+        $this->assertDatabaseHas('steam_app_workshop_items', [
+            'steam_app_id' => $steamApp->id,
+            'publishedfileid' => 99999,
+            'title' => 'HTTP Workshop Item',
+            'description' => 'Detailed Body',
+            'file_size' => 2048,
+        ]);
+    }
+
+    public function test_it_returns_null_when_app_not_found_or_cursor_unchanged_or_items_invalid(): void
+    {
+        $action = app(FetchSteamAppWorkshopItemsAction::class);
+
+        // App does not exist in DB
+        $this->assertNull($action->execute(999999, '*'));
+
+        SteamApp::factory()->create(['appid' => 4000, 'name' => 'GMod']);
+
+        // All items have result != 1 -> idsToFetch is empty
+        $mockClient = Mockery::mock(SteamApiClient::class);
+        $mockClient->shouldReceive('getAppWorkshopItems')
+            ->once()
+            ->with(4000, '*')
+            ->andReturn([
+                'publishedfiledetails' => [
+                    ['publishedfileid' => '111', 'result' => 9],
+                ],
+                'next_cursor' => 'next_c',
+            ]);
+        $this->app->instance(SteamApiClient::class, $mockClient);
+
+        $this->assertSame('next_c', app(FetchSteamAppWorkshopItemsAction::class)->execute(4000, '*'));
+
+        // Cursor unchanged -> returns null
+        $mockClient2 = Mockery::mock(SteamApiClient::class);
+        $mockClient2->shouldReceive('getAppWorkshopItems')
+            ->once()
+            ->with(4000, 'same_cursor')
+            ->andReturn([
+                'publishedfiledetails' => [
+                    [
+                        'publishedfileid' => '111',
+                        'result' => 1,
+                        'time_created' => 1700000000,
+                        'time_updated' => 1700000100,
+                    ],
+                ],
+                'next_cursor' => 'same_cursor',
+            ]);
+        $mockClient2->shouldReceive('getPublishedFileDetails')
+            ->once()
+            ->with(['111'])
+            ->andReturn([
+                ['publishedfileid' => '111', 'title' => 'Item'],
+            ]);
+        $this->app->instance(SteamApiClient::class, $mockClient2);
+
+        $this->assertNull(app(FetchSteamAppWorkshopItemsAction::class)->execute(4000, 'same_cursor'));
+    }
+
+    public function test_it_wraps_exceptions_in_laravel_steam_apps_db_exception(): void
+    {
+        SteamApp::factory()->create(['appid' => 4000, 'name' => 'GMod']);
+
+        Http::fake([
+            'api.steampowered.com/IPublishedFileService/QueryFiles/v1/*' => Http::response([], 500),
+        ]);
+
+        $this->expectException(LaravelSteamAppsDbException::class);
+        app(FetchSteamAppWorkshopItemsAction::class)->execute(4000, '*');
     }
 }

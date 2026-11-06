@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +24,13 @@ class SteamAppPackageGroupSub extends Model
         'can_get_free_license',
         'is_free_license',
         'price_in_cents_with_discount',
+    ];
+
+    protected $casts = [
+        'packageid' => 'integer',
+        'percent_savings' => 'integer',
+        'is_free_license' => 'boolean',
+        'price_in_cents_with_discount' => 'integer',
     ];
 
     public function group(): BelongsTo

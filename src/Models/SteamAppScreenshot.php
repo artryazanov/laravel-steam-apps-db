@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,6 +34,10 @@ class SteamAppScreenshot extends Model
         'screenshot_id',
         'path_thumbnail',
         'path_full',
+    ];
+
+    protected $casts = [
+        'screenshot_id' => 'integer',
     ];
 
     /**

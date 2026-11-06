@@ -9,15 +9,16 @@ A Laravel package for managing Steam application data in your database. This pac
 ![GitHub Pint Action Status](https://img.shields.io/github/actions/workflow/status/artryazanov/laravel-steam-apps-db/run-pint.yml?branch=main&label=pint)
 [![codecov](https://codecov.io/gh/artryazanov/laravel-steam-apps-db/graph/badge.svg)](https://codecov.io/gh/artryazanov/laravel-steam-apps-db)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D8.2-8892BF.svg)](https://www.php.net/)
-[![Laravel Version](https://img.shields.io/badge/laravel-11.x%7C12.x-red.svg)](https://laravel.com/)
+[![Laravel Version](https://img.shields.io/badge/laravel-12.x%7C13.x-red.svg)](https://laravel.com/)
 
 ## Introduction
 
 Laravel Steam Apps DB provides a set of tools to work with Steam application data in your Laravel application. It allows you to:
 
-- Import basic information about all Steam applications
+- Import basic information about all Steam applications (or filter by title)
+- Perform targeted updates for games matching a specific title (queued or synchronous)
 - Fetch detailed information about specific Steam games
-- Retrieve and store news articles for Steam games
+- Retrieve and store news articles and Steam Workshop items for Steam games
 - Access Steam app data through Eloquent models
 
 The package handles all the database schema creation and provides a console command to import apps and queued jobs to fetch details and news from the Steam API.
@@ -27,7 +28,7 @@ The package handles all the database schema creation and provides a console comm
 ### Requirements
 
 - PHP 8.2 or higher
-- Laravel 11.x or 12.x
+- Laravel 12.x or 13.x
 
 ### Installation Steps
 
@@ -61,14 +62,26 @@ php artisan steam:import-apps
 
 This will fetch a list of all Steam applications and store them in the `steam_apps` table.
 
+You can also filter the import to only process apps matching a specific title (partial or exact case-insensitive match):
+
+```bash
+# Partial match (e.g. matches "Half-Life", "Half-Life 2", etc.)
+php artisan steam:import-apps --title="Half-Life"
+
+# Exact match (case-insensitive)
+php artisan steam:import-apps --title="Dota 2" --exact
+```
+
 After saving each app, this command dispatches queued jobs to fetch the app's details and news asynchronously via Laravel's queue.
 
 ### Configuration
 
+- `laravel-steam-apps-db.api_key`: Steam Web API key used for Workshop `IPublishedFileService` requests. Set via env `LSADB_STEAM_API_KEY` (or `STEAM_API_KEY`).
 - `laravel-steam-apps-db.enable_news_scanning`: Controls whether the package dispatches jobs to fetch Steam news. Default is `false` (disabled). Set via env `LSADB_ENABLE_NEWS_SCANNING=true` or publish and edit the config.
 - `laravel-steam-apps-db.enable_workshop_scanning`: Controls whether the package dispatches jobs to fetch Steam Workshop items. Default is `false` (disabled). Set via env `LSADB_ENABLE_WORKSHOP_SCANNING=true` or publish and edit the config.
 - `laravel-steam-apps-db.queue`: Queue name for dispatched jobs (e.g., `high`, `default`, `low`). Default is `default`. Set via env `LSADB_QUEUE=default` or publish and edit the config.
 - `laravel-steam-apps-db.decay_seconds`: Global rate limit interval (in seconds) enforced via Redis throttle for FetchSteamApp* jobs. When > 0, jobs across all workers will run at most once per interval; when 0 or less, throttling is disabled. Default is `1`. Set via env `LSADB_DECAY_SECONDS=1`.
+- `laravel-steam-apps-db.chunk_size`: Chunk size when processing imported Steam apps. Default is `500`. Set via env `LSADB_CHUNK_SIZE=500`.
 
 Note: Throttling requires Redis to be configured in your application (used by Laravel's `Redis::throttle`). If you don't use Redis, set `decay_seconds` to `0` to disable throttling.
 
@@ -90,7 +103,7 @@ Additional notes:
 - Details job is always dispatched for every app during import.
 - News job is dispatched only when `laravel-steam-apps-db.enable_news_scanning` is enabled (disabled by default).
 - Workshop job is dispatched only when `laravel-steam-apps-db.enable_workshop_scanning` is enabled (disabled by default).
-- Jobs are unique per appid and implement Laravel's ShouldBeUnique, so duplicate jobs for the same appid won't be queued.
+- Details and News jobs are unique per `appid` and implement Laravel's `ShouldBeUnique`, while Workshop jobs are unique per `(appid, cursor)` to support cursor-based pagination.
 - API call pacing is handled via a global Redis throttle controlled by `laravel-steam-apps-db.decay_seconds`. When enabled, only one FetchSteamApp job is allowed to run per interval across all workers; excess jobs are released back to the queue to retry shortly.
 
 To process the jobs, make sure you run a queue worker in your application environment:
@@ -160,6 +173,14 @@ $apps = SteamApp::all();
 // Get a specific app by Steam appid
 $app = SteamApp::where('appid', 570)->first(); // DOTA 2
 
+// Search apps by title (case-insensitive partial or exact match)
+$witcherApps = SteamApp::whereTitle('Witcher')->get();
+$dotaApp = SteamApp::whereTitle('Dota 2', exact: true)->first();
+
+// Computed attributes
+$headerUrl = $app->header_image;
+$storeUrl = $app->steam_app_url;
+
 // Get detailed information
 $details = $app->detail;
 
@@ -186,6 +207,9 @@ $priceInfo = $app->priceInfo;
 
 // Get news articles
 $news = $app->news;
+
+// Get workshop items
+$workshopItems = $app->workshopItems;
 ```
 
 ## Database Schema
@@ -221,18 +245,29 @@ The package creates the following tables:
 
 This package uses a modular architecture with **Actions** and **Services** to separate concerns:
 
-- **Services**: `SteamApiClient` handles all direct interactions with the Steam API, including rate limiting and error handling.
-- **Actions**: Contain the core business logic (e.g., `FetchSteamAppDetailsAction`, `ImportSteamAppsAction`).
-- **Jobs**: Thin wrappers around Actions that handle queuing and uniqueness logic.
+- **Services**: `SteamApiClient` handles all direct interactions with the Steam API (`GetAppList`, `appdetails`, `GetNewsForApp`, `QueryFiles`, `GetPublishedFileDetails`).
+- **Actions**: Contain the core business logic (`ImportSteamAppsAction`, `UpdateSteamAppsByTitleAction`, `FetchSteamAppDetailsAction`, `FetchSteamAppNewsAction`, `FetchSteamAppWorkshopItemsAction`).
+- **Jobs**: Thin wrappers around Actions that handle queuing, Redis throttling, and uniqueness logic.
 
-If you need to fetch dataprogrammatically without using the queue, you can resolve the Actions from the container:
+If you need to fetch or update data programmatically, you can resolve the Actions from the container:
 
 ```php
 use Artryazanov\LaravelSteamAppsDb\Actions\FetchSteamAppDetailsAction;
+use Artryazanov\LaravelSteamAppsDb\Actions\UpdateSteamAppsByTitleAction;
 
 // Fetch and store details for a specific app immediately
 $action = app(FetchSteamAppDetailsAction::class);
 $action->execute(570);
+
+// Targeted update of apps by title (partial match in local DB, dispatches queued jobs)
+$updateByTitle = app(UpdateSteamAppsByTitleAction::class);
+$matchedApps = $updateByTitle->execute('Witcher');
+
+// Exact title match + synchronous update (immediately fetches details/news/workshop without queue)
+$matchedApps = $updateByTitle->execute('Dota 2', exact: true, sync: true);
+
+// Search directly in Steam API GetAppList (imports matching apps first if not in local DB)
+$matchedApps = $updateByTitle->execute('Counter-Strike 2', exact: true, sync: false, fromApi: true);
 ```
 
 ## Testing

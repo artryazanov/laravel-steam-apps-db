@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Jobs;
 
+use DateTimeInterface;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -9,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redis;
 
 abstract class FetchSteamAppBasicJob implements ShouldBeUnique, ShouldQueue
@@ -26,6 +30,11 @@ abstract class FetchSteamAppBasicJob implements ShouldBeUnique, ShouldQueue
     public int $tries = 3;
 
     /**
+     * Maximum number of unhandled exceptions to allow before failing.
+     */
+    public int $maxExceptions = 3;
+
+    /**
      * Backoff in seconds between attempts.
      */
     public int $backoff = 30;
@@ -33,6 +42,15 @@ abstract class FetchSteamAppBasicJob implements ShouldBeUnique, ShouldQueue
     public function __construct(int $appid)
     {
         $this->appid = $appid;
+    }
+
+    /**
+     * Determine the time at which the job should timeout.
+     * Prevents Redis throttle releases from exhausting $tries prematurely.
+     */
+    public function retryUntil(): DateTimeInterface
+    {
+        return Carbon::now()->addDay();
     }
 
     public function handle(): void

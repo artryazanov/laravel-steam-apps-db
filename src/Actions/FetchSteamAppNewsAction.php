@@ -11,7 +11,6 @@ use Artryazanov\LaravelSteamAppsDb\Services\SteamApiClient;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class FetchSteamAppNewsAction
 {

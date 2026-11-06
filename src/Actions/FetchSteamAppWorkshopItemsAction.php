@@ -23,7 +23,7 @@ class FetchSteamAppWorkshopItemsAction
     public function execute(int $appid, string $cursor = '*'): ?string
     {
         $app = SteamApp::where('appid', $appid)->first();
-        if (!$app) {
+        if (! $app) {
             return null;
         }
 
@@ -41,9 +41,13 @@ class FetchSteamAppWorkshopItemsAction
             $idsToFetch = [];
             foreach ($queryItems as $item) {
                 // result 1 = Success
-                if (($item['result'] ?? 1) == 1) {
+                if (($item['result'] ?? 1) == 1 && isset($item['publishedfileid'])) {
                     $idsToFetch[] = $item['publishedfileid'];
                 }
+            }
+
+            if (empty($idsToFetch)) {
+                return $nextCursor !== $cursor ? $nextCursor : null;
             }
 
             // 3. Request full details (GetPublishedFileDetails)
@@ -53,13 +57,17 @@ class FetchSteamAppWorkshopItemsAction
             DB::transaction(function () use ($app, $queryItems, $detailsMap) {
                 foreach ($queryItems as $queryItem) {
                     // Skip items with errors
-                    if (($queryItem['result'] ?? 1) != 1) continue;
+                    if (($queryItem['result'] ?? 1) != 1) {
+                        continue;
+                    }
 
                     $id = $queryItem['publishedfileid'];
                     $detailItem = $detailsMap->get($id);
 
                     // If no details (rare case), skip or create with what we have
-                    if (!$detailItem) continue;
+                    if (! $detailItem) {
+                        continue;
+                    }
 
                     // Handle tags
                     $tagsRaw = $detailItem['tags'] ?? [];
@@ -76,26 +84,26 @@ class FetchSteamAppWorkshopItemsAction
                         ['publishedfileid' => $id],
                         [
                             'steam_app_id' => $app->id,
-                            
+
                             // Authors and Title
                             'creator' => $detailItem['creator'] ?? null,
                             'title' => $queryItem['title'] ?? ($detailItem['title'] ?? 'Untitled'),
-                            
+
                             // Descriptions
                             'short_description' => $queryItem['short_description'] ?? null,
                             'description' => $detailItem['description'] ?? null,
-                            
+
                             // Files
                             'filename' => $detailItem['filename'] ?? null,
                             'file_size' => $detailItem['file_size'] ?? 0,
                             'file_url' => $detailItem['file_url'] ?? null,
                             'preview_url' => $queryItem['preview_url'] ?? ($detailItem['preview_url'] ?? null),
                             'url' => "https://steamcommunity.com/sharedfiles/filedetails/?id={$id}",
-                            
+
                             // Metadata
-                            'tags' => !empty($tags) ? $tags : null,
-                            'banned' => (bool)($detailItem['banned'] ?? false),
-                            
+                            'tags' => ! empty($tags) ? $tags : null,
+                            'banned' => (bool) ($detailItem['banned'] ?? false),
+
                             // Statistics
                             'views' => $queryItem['views'] ?? ($detailItem['views'] ?? 0),
                             'subscriptions' => $queryItem['subscriptions'] ?? ($detailItem['subscriptions'] ?? 0),

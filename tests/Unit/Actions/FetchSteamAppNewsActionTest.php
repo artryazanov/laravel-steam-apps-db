@@ -3,6 +3,7 @@
 namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Actions;
 
 use Artryazanov\LaravelSteamAppsDb\Actions\FetchSteamAppNewsAction;
+use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamAppNews;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
@@ -219,5 +220,24 @@ class FetchSteamAppNewsActionTest extends TestCase
         // Verify that the last_news_update field was updated
         $steamApp->refresh();
         $this->assertNotNull($steamApp->last_news_update);
+    }
+
+    public function test_execute_returns_early_when_app_not_found_and_throws_on_api_error(): void
+    {
+        $action = app(FetchSteamAppNewsAction::class);
+
+        // Non-existent app returns early without HTTP calls
+        Http::fake();
+        $action->execute(999999);
+        Http::assertNothingSent();
+
+        // API error wraps in LaravelSteamAppsDbException
+        SteamApp::factory()->create(['appid' => 570, 'name' => 'Dota 2']);
+        Http::fake([
+            'api.steampowered.com/ISteamNews/GetNewsForApp/v2/*' => Http::response([], 500),
+        ]);
+
+        $this->expectException(LaravelSteamAppsDbException::class);
+        $action->execute(570);
     }
 }

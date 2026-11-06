@@ -19,7 +19,7 @@ class FetchSteamAppWorkshopItemsJob extends FetchSteamAppBasicJob
     protected function doJob(): void
     {
         $action = app(FetchSteamAppWorkshopItemsAction::class);
-        
+
         // Fetch one page
         $nextCursor = $action->execute($this->appid, $this->cursor);
 
@@ -28,5 +28,16 @@ class FetchSteamAppWorkshopItemsJob extends FetchSteamAppBasicJob
             self::dispatch($this->appid, $nextCursor)
                 ->onQueue(config('laravel-steam-apps-db.queue', 'default'));
         }
+    }
+
+    /**
+     * Scope uniqueness by both appid and cursor so pagination dispatches from inside doJob() are not blocked.
+     */
+    public function uniqueId(): string
+    {
+        return json_encode([
+            'appid' => $this->appid,
+            'cursor' => $this->cursor,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

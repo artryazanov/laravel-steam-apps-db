@@ -14,7 +14,9 @@ class ImportSteamAppsCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'steam:import-apps';
+    protected $signature = 'steam:import-apps
+                            {--title= : Only import and update apps matching this title}
+                            {--exact : Require exact case-insensitive title match when --title is used}';
 
     /**
      * The console command description.
@@ -34,9 +36,13 @@ class ImportSteamAppsCommand extends Command
     {
         $this->info('Starting import of Steam apps...');
 
+        $titleFilter = $this->option('title');
+
         $this->importSteamAppsAction->execute(
             infoCallback: fn (string $msg) => $this->info($msg),
             errorCallback: fn (string $msg) => $this->error($msg),
+            titleFilter: is_string($titleFilter) ? $titleFilter : null,
+            exactMatch: (bool) $this->option('exact'),
         );
 
         $this->info('Import of Steam apps completed!');

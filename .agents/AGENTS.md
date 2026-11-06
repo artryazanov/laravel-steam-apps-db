@@ -3,10 +3,10 @@
 This document provides guidance for AI coding agents contributing to this repository. It summarizes how to work safely, run tests, and follow the project’s conventions.
 
 ## Repo Overview
-- Framework: Laravel (package) using Orchestra Testbench for tests.
-- Language: PHP 8.4+.
-- Tests: PHPUnit (`vendor/bin/phpunit` or `composer test`).
-- Domain: Steam apps database and updaters (jobs fetching details/news) with rate limiting and unique job semantics.
+- Framework: Laravel 12.x / 13.x (package) using Orchestra Testbench (`^10.0|^11.0`) for tests.
+- Language: PHP 8.2+ (Laravel 12) / PHP 8.3+ (Laravel 13).
+- Tests: PHPUnit (`vendor/bin/phpunit` or `composer test`), style checks via Laravel Pint (`vendor/bin/pint`).
+- Domain: Steam apps database and updaters (actions and jobs fetching details, news, and workshop items, plus targeted updates by title) with Redis rate limiting and unique job semantics.
 
 ## Quick Start
 - Install dependencies: `composer install`.
@@ -19,9 +19,11 @@ This document provides guidance for AI coding agents contributing to this reposi
 - No license header changes. Do not alter package metadata unless requested.
 - Prefer pure PHP and Laravel-native facilities already used in the repo.
 - Add or update tests when changing behavior. Don’t add tests for unrelated issues.
-- For jobs/components:
-  - `src/Jobs/FetchSteamAppBasicJob.php` implements `ShouldBeUnique` with a `uniqueId()` based on `appid`.
-  - Details/news jobs extend the basic job and share uniqueness per `appid`, but uniqueness is scoped by job class.
+- For jobs and actions:
+  - `src/Jobs/FetchSteamAppBasicJob.php` implements `ShouldBeUnique` with a `uniqueId()` based on `appid`, and defines `retryUntil()` and `$maxExceptions = 3` so Redis throttle releases do not exhaust attempts prematurely.
+  - `FetchSteamAppDetailsJob` and `FetchSteamAppNewsJob` extend the basic job and share uniqueness per `appid` (scoped by job class).
+  - `FetchSteamAppWorkshopItemsJob` extends the basic job and overrides `uniqueId()` to include both `appid` and `cursor` so recursive pagination dispatches inside `doJob()` are not blocked by the active job's lock.
+  - `SteamApiClient::getAppDetails()` returns `null` when the Steam API responds with `success: false`; `FetchSteamAppDetailsAction` updates `last_details_update` and exits cleanly without failing the job.
   - Be mindful of backoff/tries and the `decay_seconds` sleep in `handle()` when simulating rates.
 
 ## Testing Notes
@@ -52,10 +54,7 @@ This document provides guidance for AI coding agents contributing to this reposi
 - Prefer adding targeted tests near existing ones. Mirror established patterns:
   - Use factory/ORM APIs (`updateOrCreate`, relations) rather than raw queries.
   - Use `Bus::assertDispatched*` and `Bus::assertNotDispatched*` for queue checks.
-- When changing dispatch logic, add/adjust tests to cover edge cases:
-  - Unknown/future release dates treated as recent.
-  - Thresholds controlled by `config('laravel-steam-apps-db.*')` values.
-  - Exact boundary conditions do not dispatch (strictly greater-than comparisons).
+- When changing dispatch logic, add/adjust tests to cover configuration flags (`laravel-steam-apps-db.*`) and queue names.
 
 ## PR Checklist
 - Code compiles; unit tests pass locally: `composer test`.
@@ -72,15 +71,17 @@ This document provides guidance for AI coding agents contributing to this reposi
 ## Commands Reference
 - Run tests: `vendor/bin/phpunit` or `composer test`.
 - Filter tests: `vendor/bin/phpunit --filter TestName`.
-- Show verbose output: `vendor/bin/phpunit -v`.
+- Check code style: `vendor/bin/pint --test`.
 
 ## Contact & Ownership
 - Package provider: `LaravelSteamAppsDbServiceProvider`.
 - Primary areas:
+  - Actions: `src/Actions/*` (`ImportSteamAppsAction`, `UpdateSteamAppsByTitleAction`, `FetchSteamAppDetailsAction`, `FetchSteamAppNewsAction`, `FetchSteamAppWorkshopItemsAction`)
   - Jobs: `src/Jobs/*`
-  - Actions: `src/Actions/*`
-  - Services: `src/Services/*`
+  - Console: `src/Console/*` (`ImportSteamAppsCommand`)
+  - Services: `src/Services/*` (`SteamApiClient`)
   - Models: `src/Models/*`
+  - Enums & Exceptions: `src/Enums/*`, `src/Exceptions/*`
   - Tests: `tests/*`
 
 If you’re an automated agent, apply minimal diffs and include a concise summary of changes in your output. When in doubt, prefer adjusting tests to reflect intended behavior rather than weakening core guarantees like job uniqueness.

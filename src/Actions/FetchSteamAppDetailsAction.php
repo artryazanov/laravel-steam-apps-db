@@ -58,6 +58,10 @@ class FetchSteamAppDetailsAction
             // Update the last_details_update field in the SteamApp model
             $app->update(['last_details_update' => Carbon::now()]);
 
+            if ($details === null) {
+                return;
+            }
+
             // Resolve library image URL and inject into details
             $details['library_image'] = $this->resolveLibraryImageUrl($app->appid);
             // Resolve library hero image URL and inject into details
@@ -155,7 +159,7 @@ class FetchSteamAppDetailsAction
             ['steam_app_id' => $app->id],
             [
                 'type' => $details['type'] ?? null,
-                'name' => $details['name'],
+                'name' => $details['name'] ?? $app->name,
                 'required_age' => $details['required_age'] ?? 0,
                 'is_free' => $details['is_free'] ?? false,
                 'controller_support' => $details['controller_support'] ?? null,
@@ -224,17 +228,17 @@ class FetchSteamAppDetailsAction
         }
 
         // Store PC requirements
-        if (isset($details['pc_requirements'])) {
+        if (isset($details['pc_requirements']) && is_array($details['pc_requirements']) && ! empty($details['pc_requirements'])) {
             $this->storeRequirements($app, 'pc', $details['pc_requirements']);
         }
 
         // Store Mac requirements
-        if (isset($details['mac_requirements'])) {
+        if (isset($details['mac_requirements']) && is_array($details['mac_requirements']) && ! empty($details['mac_requirements'])) {
             $this->storeRequirements($app, 'mac', $details['mac_requirements']);
         }
 
         // Store Linux requirements
-        if (isset($details['linux_requirements'])) {
+        if (isset($details['linux_requirements']) && is_array($details['linux_requirements']) && ! empty($details['linux_requirements'])) {
             $this->storeRequirements($app, 'linux', $details['linux_requirements']);
         }
 
@@ -269,7 +273,7 @@ class FetchSteamAppDetailsAction
         }
 
         // Store price info
-        if (isset($details['price_overview'])) {
+        if (isset($details['price_overview']) && is_array($details['price_overview']) && ! empty($details['price_overview'])) {
             $this->storePriceInfo($app, $details['price_overview']);
         }
     }
@@ -311,7 +315,7 @@ class FetchSteamAppDetailsAction
 
         // Create or update screenshots
         foreach ($screenshots as $screenshotData) {
-            SteamAppScreenshot::updateOrCreate(
+            $screenshot = SteamAppScreenshot::withTrashed()->updateOrCreate(
                 [
                     'steam_app_id' => $app->id,
                     'screenshot_id' => $screenshotData['id'],
@@ -321,6 +325,10 @@ class FetchSteamAppDetailsAction
                     'path_full' => $screenshotData['path_full'] ?? null,
                 ]
             );
+
+            if ($screenshot->trashed()) {
+                $screenshot->restore();
+            }
         }
     }
 
@@ -344,7 +352,7 @@ class FetchSteamAppDetailsAction
 
         // Create or update movies
         foreach ($movies as $movieData) {
-            SteamAppMovie::withTrashed()->updateOrCreate(
+            $movie = SteamAppMovie::withTrashed()->updateOrCreate(
                 [
                     'steam_app_id' => $app->id,
                     'movie_id' => $movieData['id'],
@@ -357,9 +365,12 @@ class FetchSteamAppDetailsAction
                     'mp4_480' => $movieData['mp4']['480'] ?? null,
                     'mp4_max' => $movieData['mp4']['max'] ?? null,
                     'highlight' => $movieData['highlight'] ?? false,
-                    'deleted_at' => null,
                 ]
             );
+
+            if ($movie->trashed()) {
+                $movie->restore();
+            }
         }
     }
 

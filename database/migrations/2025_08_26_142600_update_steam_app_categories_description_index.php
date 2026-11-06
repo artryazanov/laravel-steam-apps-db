@@ -12,13 +12,13 @@ return new class extends Migration
             // Drop unique index on description if it exists, then add a non-unique index
             try {
                 $table->dropUnique('steam_app_categories_description_unique');
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Ignore if the unique index doesn't exist (fresh installs)
             }
 
             try {
                 $table->index('description');
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Ignore if the index already exists
             }
         });
@@ -30,13 +30,13 @@ return new class extends Migration
             // Revert: drop non-unique index and recreate unique one
             try {
                 $table->dropIndex('steam_app_categories_description_index');
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Ignore if the non-unique index doesn't exist
             }
 
             try {
                 $table->unique('description');
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Ignore if the unique index already exists
             }
         });

@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
-use Artryazanov\LaravelSteamAppsDb\Models\SteamAppWorkshopItem;
 
 /**
  * Artryazanov\LaravelSteamAppsDb\Models\SteamApp
@@ -35,14 +34,22 @@ use Artryazanov\LaravelSteamAppsDb\Models\SteamAppWorkshopItem;
  * @property-read SteamAppDeveloper[] $developers The developers for this app
  * @property-read SteamAppPublisher[] $publishers The publishers for this app
  * @property-read SteamAppPriceInfo|null $priceInfo The price information for this app
+ * @property-read SteamAppDlc[] $dlcs The DLC items for this app
+ * @property-read SteamAppDemo[] $demos The demos for this app
+ * @property-read SteamAppPackage[] $packages The packages for this app
+ * @property-read SteamAppPackageGroup[] $packageGroups The package groups for this app
+ * @property-read SteamAppAchievementHighlighted[] $achievementsHighlighted The highlighted achievements for this app
+ * @property-read SteamAppContentDescriptorId[] $contentDescriptorIds The content descriptor IDs for this app
+ * @property-read SteamAppRating[] $ratings The ratings for this app
  * @property-read SteamAppNews[] $news The news items for this app
  * @property-read SteamAppWorkshopItem[] $workshopItems The workshop items for this app
- * @property-read string $headerImage URL to the header image of the Steam application
- * @property-read string $steamAppUrl URL to the Steam store page of the application
+ * @property-read string $header_image URL to the header image of the Steam application
+ * @property-read string $steam_app_url URL to the Steam store page of the application
  *
  * @method static Builder|SteamApp newModelQuery()
  * @method static Builder|SteamApp newQuery()
  * @method static Builder|SteamApp query()
+ * @method static Builder|SteamApp whereTitle(string $title, bool $exact = false)
  */
 class SteamApp extends Model
 {
@@ -66,6 +73,7 @@ class SteamApp extends Model
     }
 
     protected $casts = [
+        'appid' => 'integer',
         'last_details_update' => 'datetime',
         'last_news_update' => 'datetime',
     ];
@@ -211,13 +219,29 @@ class SteamApp extends Model
     }
 
     /**
+     * Scope a query to filter Steam apps by title (case-insensitive exact or partial match).
+     */
+    public function scopeWhereTitle(Builder $query, string $title, bool $exact = false): Builder
+    {
+        $normalized = mb_strtolower(trim($title));
+
+        if ($exact) {
+            return $query->whereRaw('LOWER(name) = ?', [$normalized]);
+        }
+
+        $escaped = addcslashes($normalized, '%_\\');
+
+        return $query->whereRaw("LOWER(name) LIKE ? ESCAPE '\\'", ["%{$escaped}%"]);
+    }
+
+    /**
      * Get the header image URL for the Steam application.
      */
     protected function headerImage(): Attribute
     {
         return Attribute::make(
-            get: function () {
-                if (isset($this->detail->header_image)) {
+            get: function (): string {
+                if (($this->relationLoaded('detail') || ! static::preventsLazyLoading()) && isset($this->detail->header_image)) {
                     return $this->detail->header_image;
                 }
 
@@ -232,7 +256,7 @@ class SteamApp extends Model
     protected function steamAppUrl(): Attribute
     {
         return Attribute::make(
-            get: fn () => "https://store.steampowered.com/app/{$this->appid}",
+            get: fn (): string => "https://store.steampowered.com/app/{$this->appid}",
         );
     }
 }

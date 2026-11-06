@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +17,10 @@ class SteamAppPackage extends Model
     protected $fillable = [
         'steam_app_id',
         'package_id',
+    ];
+
+    protected $casts = [
+        'package_id' => 'integer',
     ];
 
     public function steamApp(): BelongsTo

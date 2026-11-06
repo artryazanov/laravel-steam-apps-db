@@ -259,4 +259,30 @@ class ImportSteamAppsCommandTest extends TestCase
         ]);
         $this->assertDatabaseCount('steam_apps', 2);
     }
+
+    public function test_command_filters_apps_by_title_and_exact_options(): void
+    {
+        Http::fake([
+            'https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json' => Http::response([
+                'applist' => [
+                    'apps' => [
+                        ['appid' => 70, 'name' => 'Half-Life'],
+                        ['appid' => 220, 'name' => 'Half-Life 2'],
+                        ['appid' => 570, 'name' => 'Dota 2'],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        Bus::fake();
+
+        $this->artisan('steam:import-apps', ['--title' => 'half-life', '--exact' => true])
+            ->expectsOutputToContain('Found 1 apps in the Steam API response')
+            ->expectsOutputToContain('Import completed: 1 apps created, 0 apps updated')
+            ->assertSuccessful();
+
+        Bus::assertDispatchedTimes(FetchSteamAppDetailsJob::class, 1);
+        $this->assertDatabaseHas('steam_apps', ['appid' => 70, 'name' => 'Half-Life']);
+        $this->assertDatabaseCount('steam_apps', 1);
+    }
 }

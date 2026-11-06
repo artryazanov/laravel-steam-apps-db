@@ -6,7 +6,6 @@ namespace Artryazanov\LaravelSteamAppsDb\Jobs;
 
 use Artryazanov\LaravelSteamAppsDb\Actions\FetchSteamAppDetailsAction;
 use Artryazanov\LaravelSteamAppsDb\Exceptions\LaravelSteamAppsDbException;
-use Artryazanov\LaravelSteamAppsDb\Services\SteamApiClient;
 
 class FetchSteamAppDetailsJob extends FetchSteamAppBasicJob
 {

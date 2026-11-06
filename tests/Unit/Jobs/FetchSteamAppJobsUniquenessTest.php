@@ -4,6 +4,7 @@ namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Jobs;
 
 use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppDetailsJob;
 use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob;
+use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppWorkshopItemsJob;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
@@ -73,6 +74,18 @@ class FetchSteamAppJobsUniquenessTest extends TestCase
         FetchSteamAppDetailsJob::dispatch(4242);
 
         Bus::assertDispatchedTimes(FetchSteamAppDetailsJob::class, 1);
+    }
+
+    public function test_workshop_job_uniqueness_includes_cursor(): void
+    {
+        // Duplicate with same appid and cursor '*' is ignored
+        FetchSteamAppWorkshopItemsJob::dispatch(4000, '*');
+        FetchSteamAppWorkshopItemsJob::dispatch(4000, '*');
+
+        // Different cursor for same appid is allowed while '*' lock is still held
+        FetchSteamAppWorkshopItemsJob::dispatch(4000, 'cursor_page_2');
+
+        Bus::assertDispatchedTimes(FetchSteamAppWorkshopItemsJob::class, 2);
     }
 
     /**

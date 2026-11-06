@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -45,6 +47,7 @@ class SteamAppMovie extends Model
     ];
 
     protected $casts = [
+        'movie_id' => 'integer',
         'highlight' => 'boolean',
     ];
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +24,10 @@ class SteamAppPackageGroup extends Model
         'save_text',
         'display_type',
         'is_recurring_subscription',
+    ];
+
+    protected $casts = [
+        'display_type' => 'integer',
     ];
 
     public function steamApp(): BelongsTo

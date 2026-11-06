@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Enums;
 
 /**
@@ -8,6 +10,9 @@ namespace Artryazanov\LaravelSteamAppsDb\Enums;
 enum SteamAppType: string
 {
     case ADVERTISING = 'advertising';
+    case APPLICATION = 'application';
+    case BETA = 'beta';
+    case CONFIG = 'config';
     case DEMO = 'demo';
     case DLC = 'dlc';
     case EPISODE = 'episode';
@@ -16,5 +21,6 @@ enum SteamAppType: string
     case MOD = 'mod';
     case MUSIC = 'music';
     case SERIES = 'series';
+    case TOOL = 'tool';
     case VIDEO = 'video';
 }

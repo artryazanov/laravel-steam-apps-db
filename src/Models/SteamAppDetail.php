@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Artryazanov\LaravelSteamAppsDb\Database\Factories\SteamAppDetailFactory;

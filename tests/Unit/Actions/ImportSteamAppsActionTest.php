@@ -97,18 +97,16 @@ class ImportSteamAppsActionTest extends TestCase
         Bus::assertDispatched(FetchSteamAppNewsJob::class);
     }
 
-    public function test_recent_release_exact_interval_does_not_dispatch(): void
+    public function test_always_dispatches_regardless_of_recent_last_update_or_release_age(): void
     {
         $app = SteamApp::create([
             'appid' => 42,
             'name' => 'App',
-            // Exactly 7 days ago -> should NOT dispatch because rule is strictly greater than interval
-            'last_details_update' => Carbon::now()->subDays(7),
+            'last_details_update' => Carbon::now()->subDays(1),
         ]);
-        // release within 6 months => recent
         $app->detail()->create([
             'name' => 'App',
-            'release_date' => Carbon::now()->subMonths(3),
+            'release_date' => Carbon::now()->subYears(5),
         ]);
 
         $this->runImport();
@@ -117,96 +115,15 @@ class ImportSteamAppsActionTest extends TestCase
         Bus::assertDispatched(FetchSteamAppNewsJob::class);
     }
 
-    public function test_recent_release_after_interval_dispatches(): void
+    public function test_invalid_chunk_size_is_clamped_to_at_least_one(): void
     {
-        $app = SteamApp::create([
-            'appid' => 42,
-            'name' => 'App',
-            // 8 days ago -> should dispatch (greater than 7)
-            'last_details_update' => Carbon::now()->subDays(8),
-        ]);
-        $app->detail()->create([
-            'name' => 'App',
-            'release_date' => Carbon::now()->subMonths(3),
-        ]);
-
-        $this->runImport();
-
-        Bus::assertDispatched(FetchSteamAppDetailsJob::class);
-        Bus::assertDispatched(FetchSteamAppNewsJob::class);
-    }
-
-    public function test_mid_age_release_respects_interval(): void
-    {
-        // exactly 30 days -> no dispatch
-        $app = SteamApp::create([
-            'appid' => 42,
-            'name' => 'App',
-            'last_details_update' => Carbon::now()->subDays(30),
-        ]);
-        $app->detail()->create([
-            'name' => 'App',
-            // 1 year ago -> mid age
-            'release_date' => Carbon::now()->subMonths(12),
-        ]);
-
-        $this->runImport();
-        Bus::assertDispatched(FetchSteamAppDetailsJob::class);
-        Bus::assertDispatched(FetchSteamAppNewsJob::class);
-
-    }
-
-    public function test_old_release_respects_interval(): void
-    {
-        $app = SteamApp::create([
-            'appid' => 42,
-            'name' => 'App',
-            'last_details_update' => Carbon::now()->subDays(183),
-        ]);
-        $app->detail()->create([
-            'name' => 'App',
-            // 3 years ago -> old
-            'release_date' => Carbon::now()->subYears(3),
-        ]);
-
-        $this->runImport();
-        Bus::assertDispatched(FetchSteamAppDetailsJob::class);
-        Bus::assertDispatched(FetchSteamAppNewsJob::class);
-    }
-
-    public function test_unknown_or_future_release_treated_as_recent(): void
-    {
-        // Unknown release date
-        $app1 = SteamApp::create([
-            'appid' => 42,
-            'name' => 'App',
-            'last_details_update' => Carbon::now()->subDays(8),
-        ]);
-        // no detail -> unknown release -> should dispatch (recent rules)
-        $this->runImport();
-        Bus::assertDispatched(FetchSteamAppDetailsJob::class);
-        Bus::assertDispatched(FetchSteamAppNewsJob::class);
-
-        // Future release date -> also recent
-        // Clear cache and unique job locks between runs
         $this->flushCacheAndLocks();
-        Bus::fake();
-        $app1->detail()->create([
-            'name' => 'App',
-            'release_date' => Carbon::now()->addMonth(),
-        ]);
-        $this->runImport();
-        Bus::assertDispatched(FetchSteamAppDetailsJob::class);
-        Bus::assertDispatched(FetchSteamAppNewsJob::class);
+        config(['laravel-steam-apps-db.chunk_size' => 0]);
 
-        // Boundary case (exact 7 days) should still dispatch now
-        // Clear cache and unique job locks between runs
-        $this->flushCacheAndLocks();
-        Bus::fake();
-        $app1->update(['last_details_update' => Carbon::now()->subDays(7)]);
         $this->runImport();
+
         Bus::assertDispatched(FetchSteamAppDetailsJob::class);
-        Bus::assertDispatched(FetchSteamAppNewsJob::class);
+        $this->assertDatabaseHas('steam_apps', ['appid' => 42, 'name' => 'App']);
     }
 
     /**
@@ -280,5 +197,31 @@ class ImportSteamAppsActionTest extends TestCase
         Bus::assertDispatched(FetchSteamAppNewsJob::class, function ($job) {
             return ($job->queue ?? null) === 'default';
         });
+    }
+
+    public function test_title_filter_with_partial_match_skips_empty_names(): void
+    {
+        $this->flushCacheAndLocks();
+
+        Http::fake([
+            'https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json' => Http::response([
+                'applist' => [
+                    'apps' => [
+                        ['appid' => 1, 'name' => ''],
+                        ['appid' => 70, 'name' => 'Half-Life'],
+                        ['appid' => 220, 'name' => 'Half-Life 2'],
+                        ['appid' => 570, 'name' => 'Dota 2'],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        Bus::fake();
+
+        $action = new ImportSteamAppsAction(new SteamApiClient);
+        $action->execute(titleFilter: 'half-life', exactMatch: false);
+
+        Bus::assertDispatchedTimes(FetchSteamAppDetailsJob::class, 2);
+        $this->assertDatabaseCount('steam_apps', 2);
     }
 }

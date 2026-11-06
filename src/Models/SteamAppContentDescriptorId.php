@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Artryazanov\LaravelSteamAppsDb\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +17,10 @@ class SteamAppContentDescriptorId extends Model
     protected $fillable = [
         'steam_app_id',
         'descriptor_id',
+    ];
+
+    protected $casts = [
+        'descriptor_id' => 'integer',
     ];
 
     public function steamApp(): BelongsTo

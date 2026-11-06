@@ -23,7 +23,9 @@ class SteamApiClient
      * The Steam API endpoint for getting app news.
      */
     private const STEAM_APP_NEWS_URL = 'https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/';
+
     private const STEAM_WORKSHOP_QUERY_URL = 'https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/';
+
     private const STEAM_REMOTE_STORAGE_URL = 'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/';
 
     /**
@@ -69,10 +71,15 @@ class SteamApiClient
 
         $data = $response->json();
 
-        if (! isset($data[$appid]['success']) || ! $data[$appid]['success'] || ! isset($data[$appid]['data'])) {
-            // It's possible the app doesn't exist or success is false, which isn't always an exception but a "not found" state.
-            // However, keeping consistent with previous logic, we might want to throw or return null.
-            // Previous component threw exception for body issues.
+        if (! is_array($data) || ! isset($data[$appid]['success'])) {
+            throw new LaravelSteamAppsDbException("FetchAppDetailsFromApi, Steam API response body: {$response->body()}");
+        }
+
+        if (! $data[$appid]['success']) {
+            return null;
+        }
+
+        if (! isset($data[$appid]['data']) || ! is_array($data[$appid]['data'])) {
             throw new LaravelSteamAppsDbException("FetchAppDetailsFromApi, Steam API response body: {$response->body()}");
         }
 
@@ -104,5 +111,76 @@ class SteamApiClient
         }
 
         return $data['appnews'];
+    }
+
+    /**
+     * Fetch Workshop items page for a Steam app via IPublishedFileService/QueryFiles.
+     *
+     * @throws LaravelSteamAppsDbException
+     */
+    public function getAppWorkshopItems(int $appid, string $cursor = '*', int $numPerPage = 100): array
+    {
+        $query = [
+            'appid' => $appid,
+            'cursor' => $cursor,
+            'numperpage' => $numPerPage,
+            'return_metadata' => true,
+            'return_tags' => true,
+            'return_details' => true,
+            'return_short_description' => true,
+        ];
+
+        $apiKey = config('laravel-steam-apps-db.api_key');
+        if (is_string($apiKey) && $apiKey !== '') {
+            $query['key'] = $apiKey;
+        }
+
+        $response = Http::get(self::STEAM_WORKSHOP_QUERY_URL, $query);
+
+        if (! $response->successful()) {
+            throw new LaravelSteamAppsDbException("FetchWorkshopItemsFromApi, Steam API response status: {$response->status()}");
+        }
+
+        $data = $response->json();
+
+        if (! is_array($data) || ! isset($data['response']) || ! is_array($data['response'])) {
+            throw new LaravelSteamAppsDbException("FetchWorkshopItemsFromApi, Steam API response body: {$response->body()}");
+        }
+
+        return $data['response'];
+    }
+
+    /**
+     * Fetch full details for a list of Workshop published file IDs via ISteamRemoteStorage/GetPublishedFileDetails.
+     *
+     * @param  array<int, int|string>  $publishedFileIds
+     * @return array<int, array<string, mixed>>
+     *
+     * @throws LaravelSteamAppsDbException
+     */
+    public function getPublishedFileDetails(array $publishedFileIds): array
+    {
+        $ids = array_values($publishedFileIds);
+
+        if (empty($ids)) {
+            return [];
+        }
+
+        $response = Http::asForm()->post(self::STEAM_REMOTE_STORAGE_URL, [
+            'itemcount' => count($ids),
+            'publishedfileids' => $ids,
+        ]);
+
+        if (! $response->successful()) {
+            throw new LaravelSteamAppsDbException("FetchPublishedFileDetailsFromApi, Steam API response status: {$response->status()}");
+        }
+
+        $data = $response->json();
+
+        if (! is_array($data) || ! isset($data['response']['publishedfiledetails']) || ! is_array($data['response']['publishedfiledetails'])) {
+            throw new LaravelSteamAppsDbException("FetchPublishedFileDetailsFromApi, Steam API response body: {$response->body()}");
+        }
+
+        return $data['response']['publishedfiledetails'];
     }
 }
