@@ -229,9 +229,9 @@ class SteamApp extends Model
             return $query->whereRaw('LOWER(name) = ?', [$normalized]);
         }
 
-        $escaped = addcslashes($normalized, '%_\\');
+        $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $normalized);
 
-        return $query->whereRaw("LOWER(name) LIKE ? ESCAPE '\\'", ["%{$escaped}%"]);
+        return $query->whereRaw("LOWER(name) LIKE ? ESCAPE '!'", ["%{$escaped}%"]);
     }
 
     /**

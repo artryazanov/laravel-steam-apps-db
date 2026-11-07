@@ -115,4 +115,29 @@ class SteamAppModelsTest extends TestCase
         $this->assertCount(1, $app->news);
         $this->assertCount(1, $app->workshopItems);
     }
+
+    public function test_scope_where_title_supports_exact_partial_and_escapes_special_characters(): void
+    {
+        SteamApp::create(['appid' => 1001, 'name' => '100% Orange Juice']);
+        SteamApp::create(['appid' => 1002, 'name' => '1000 Amps']);
+        SteamApp::create(['appid' => 1003, 'name' => 'A_B Testing']);
+        SteamApp::create(['appid' => 1004, 'name' => 'ACB Testing']);
+        SteamApp::create(['appid' => 1005, 'name' => 'Bang! Bang! Racing']);
+
+        // Exact match (case-insensitive, trimmed)
+        $exact = SteamApp::whereTitle('  100% orange juice  ', exact: true)->pluck('appid')->all();
+        $this->assertSame([1001], $exact);
+
+        // Partial match escaping '%'
+        $percent = SteamApp::whereTitle('100%', exact: false)->pluck('appid')->all();
+        $this->assertSame([1001], $percent);
+
+        // Partial match escaping '_'
+        $underscore = SteamApp::whereTitle('a_b', exact: false)->pluck('appid')->all();
+        $this->assertSame([1003], $underscore);
+
+        // Partial match escaping '!' (the LIKE ESCAPE character)
+        $exclamation = SteamApp::whereTitle('bang!', exact: false)->pluck('appid')->all();
+        $this->assertSame([1005], $exclamation);
+    }
 }

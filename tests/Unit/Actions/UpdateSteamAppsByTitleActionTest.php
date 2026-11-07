@@ -145,13 +145,12 @@ class UpdateSteamAppsByTitleActionTest extends TestCase
         config(['laravel-steam-apps-db.enable_news_scanning' => false]);
 
         Http::fake([
-            'https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json' => Http::response([
-                'applist' => [
-                    'apps' => [
-                        ['appid' => 730, 'name' => 'Counter-Strike 2'],
-                        ['appid' => 10, 'name' => 'Counter-Strike'],
-                        ['appid' => 570, 'name' => 'Dota 2'],
-                    ],
+            'https://store.steampowered.com/api/storesearch/*' => Http::response([
+                'total' => 3,
+                'items' => [
+                    ['id' => 730, 'name' => 'Counter-Strike 2'],
+                    ['id' => 10, 'name' => 'Counter-Strike'],
+                    ['id' => 570, 'name' => 'Dota 2'],
                 ],
             ], 200),
         ]);
@@ -194,13 +193,12 @@ class UpdateSteamAppsByTitleActionTest extends TestCase
         ]);
 
         Http::fake([
-            'https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json' => Http::response([
-                'applist' => [
-                    'apps' => [
-                        ['appid' => 1, 'name' => ''],
-                        ['appid' => 70, 'name' => 'Half-Life'],
-                        ['appid' => 220, 'name' => 'Half-Life 2'],
-                    ],
+            'https://store.steampowered.com/api/storesearch/*' => Http::response([
+                'total' => 3,
+                'items' => [
+                    ['id' => 1, 'name' => ''],
+                    ['id' => 70, 'name' => 'Half-Life'],
+                    ['id' => 220, 'name' => 'Half-Life 2'],
                 ],
             ], 200),
         ]);
@@ -230,7 +228,7 @@ class UpdateSteamAppsByTitleActionTest extends TestCase
     public function test_from_api_handles_steam_api_exceptions_gracefully(): void
     {
         Http::fake([
-            'https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json' => Http::response([], 500),
+            'https://store.steampowered.com/api/storesearch/*' => Http::response([], 500),
         ]);
 
         $errors = [];
@@ -245,5 +243,26 @@ class UpdateSteamAppsByTitleActionTest extends TestCase
 
         $this->assertCount(0, $matched);
         $this->assertNotEmpty($errors);
+    }
+
+    public function test_handles_unexpected_generic_exception_gracefully(): void
+    {
+        Http::fake(function () {
+            throw new \RuntimeException('Unexpected connection failure');
+        });
+
+        $errors = [];
+        $action = app(UpdateSteamAppsByTitleAction::class);
+        $matched = $action->execute(
+            title: 'Dota 2',
+            fromApi: true,
+            errorCallback: function (string $msg) use (&$errors) {
+                $errors[] = $msg;
+            },
+        );
+
+        $this->assertCount(0, $matched);
+        $this->assertCount(1, $errors);
+        $this->assertStringContainsString('An error occurred during targeted update: Unexpected connection failure', $errors[0]);
     }
 }

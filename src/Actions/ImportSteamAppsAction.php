@@ -39,11 +39,10 @@ class ImportSteamAppsAction
         try {
             $infoCallback('Fetching data from Steam API...');
 
-            $apps = $this->steamApiClient->getAppList();
-
             if ($titleFilter !== null && trim($titleFilter) !== '') {
                 $trimmedFilter = trim($titleFilter);
                 $normalizedFilter = mb_strtolower($trimmedFilter);
+                $apps = $this->steamApiClient->searchAppsByTitle($trimmedFilter);
 
                 $apps = array_values(array_filter($apps, function (array $app) use ($trimmedFilter, $normalizedFilter, $exactMatch): bool {
                     $name = isset($app['name']) ? trim((string) $app['name']) : '';
@@ -55,6 +54,8 @@ class ImportSteamAppsAction
                         ? mb_strtolower($name) === $normalizedFilter
                         : mb_stripos($name, $trimmedFilter) !== false;
                 }));
+            } else {
+                $apps = $this->steamApiClient->getAppList();
             }
 
             $totalApps = count($apps);

@@ -1,6 +1,6 @@
 # Laravel Steam Apps DB
 
-A Laravel package for managing Steam application data in your database. This package provides functionality to import Steam apps, fetch detailed information, and retrieve news for Steam games.
+A Laravel package for managing Steam application data in your database. This package provides functionality to import Steam apps, perform targeted updates by title, fetch detailed information, and retrieve news and Workshop items for Steam games.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/artryazanov/laravel-steam-apps-db.svg?style=flat-square)](https://packagist.org/packages/artryazanov/laravel-steam-apps-db)
@@ -62,7 +62,7 @@ php artisan steam:import-apps
 
 This will fetch a list of all Steam applications and store them in the `steam_apps` table.
 
-You can also filter the import to only process apps matching a specific title (partial or exact case-insensitive match):
+You can also filter the import to only process apps matching a specific title via the Steam Store Search API (partial or exact case-insensitive match):
 
 ```bash
 # Partial match (e.g. matches "Half-Life", "Half-Life 2", etc.)
@@ -72,7 +72,7 @@ php artisan steam:import-apps --title="Half-Life"
 php artisan steam:import-apps --title="Dota 2" --exact
 ```
 
-After saving each app, this command dispatches queued jobs to fetch the app's details and news asynchronously via Laravel's queue.
+After saving each app, this command dispatches queued jobs to fetch the app's details, news, and Workshop items asynchronously via Laravel's queue.
 
 ### Configuration
 
@@ -245,7 +245,7 @@ The package creates the following tables:
 
 This package uses a modular architecture with **Actions** and **Services** to separate concerns:
 
-- **Services**: `SteamApiClient` handles all direct interactions with the Steam API (`GetAppList`, `appdetails`, `GetNewsForApp`, `QueryFiles`, `GetPublishedFileDetails`).
+- **Services**: `SteamApiClient` handles all direct interactions with the Steam API (`GetAppList`, `searchAppsByTitle` via Store Search, `appdetails`, `GetNewsForApp`, `QueryFiles`, `GetPublishedFileDetails`).
 - **Actions**: Contain the core business logic (`ImportSteamAppsAction`, `UpdateSteamAppsByTitleAction`, `FetchSteamAppDetailsAction`, `FetchSteamAppNewsAction`, `FetchSteamAppWorkshopItemsAction`).
 - **Jobs**: Thin wrappers around Actions that handle queuing, Redis throttling, and uniqueness logic.
 
@@ -266,7 +266,7 @@ $matchedApps = $updateByTitle->execute('Witcher');
 // Exact title match + synchronous update (immediately fetches details/news/workshop without queue)
 $matchedApps = $updateByTitle->execute('Dota 2', exact: true, sync: true);
 
-// Search directly in Steam API GetAppList (imports matching apps first if not in local DB)
+// Search directly in Steam Store Search API (imports matching apps first if not in local DB)
 $matchedApps = $updateByTitle->execute('Counter-Strike 2', exact: true, sync: false, fromApi: true);
 ```
 

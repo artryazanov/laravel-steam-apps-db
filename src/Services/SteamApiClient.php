@@ -15,6 +15,11 @@ class SteamApiClient
     private const STEAM_API_URL = 'https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json';
 
     /**
+     * The Steam Store API endpoint for searching apps by title.
+     */
+    private const STEAM_STORE_SEARCH_URL = 'https://store.steampowered.com/api/storesearch/';
+
+    /**
      * The Steam API endpoint for getting app details.
      */
     private const STEAM_DETAILS_API_URL = 'https://store.steampowered.com/api/appdetails';
@@ -50,6 +55,51 @@ class SteamApiClient
         }
 
         return $data['applist']['apps'];
+    }
+
+    /**
+     * Search Steam apps by title via the Steam Store Search API.
+     *
+     * @return array<int, array{appid: int, name: string}>
+     *
+     * @throws LaravelSteamAppsDbException
+     */
+    public function searchAppsByTitle(string $title): array
+    {
+        $trimmed = trim($title);
+        if ($trimmed === '') {
+            return [];
+        }
+
+        $response = Http::get(self::STEAM_STORE_SEARCH_URL, [
+            'term' => $trimmed,
+            'l' => 'english',
+            'cc' => 'US',
+        ]);
+
+        if (! $response->successful()) {
+            throw new LaravelSteamAppsDbException('Failed to fetch data from Steam API: '.$response->status());
+        }
+
+        $data = $response->json();
+
+        if (! is_array($data) || ! isset($data['items']) || ! is_array($data['items'])) {
+            throw new LaravelSteamAppsDbException('Invalid response format from Steam API');
+        }
+
+        $apps = [];
+        foreach ($data['items'] as $item) {
+            if (! is_array($item) || ! isset($item['id'], $item['name'])) {
+                continue;
+            }
+
+            $apps[] = [
+                'appid' => (int) $item['id'],
+                'name' => (string) $item['name'],
+            ];
+        }
+
+        return $apps;
     }
 
     /**

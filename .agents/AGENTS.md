@@ -24,6 +24,10 @@ This document provides guidance for AI coding agents contributing to this reposi
   - `FetchSteamAppDetailsJob` and `FetchSteamAppNewsJob` extend the basic job and share uniqueness per `appid` (scoped by job class).
   - `FetchSteamAppWorkshopItemsJob` extends the basic job and overrides `uniqueId()` to include both `appid` and `cursor` so recursive pagination dispatches inside `doJob()` are not blocked by the active job's lock.
   - `SteamApiClient::getAppDetails()` returns `null` when the Steam API responds with `success: false`; `FetchSteamAppDetailsAction` updates `last_details_update` and exits cleanly without failing the job.
+  - `SteamApiClient::searchAppsByTitle()` queries the Steam Store Search API (`https://store.steampowered.com/api/storesearch/?term=...&l=english&cc=US`, no API key required) and returns `array<int, array{appid: int, name: string}>`.
+  - `UpdateSteamAppsByTitleAction` searches locally via `SteamApp::whereTitle($title, $exact)` (`fromApi: false`) or imports matching apps via `SteamApiClient::searchAppsByTitle()` (`fromApi: true`), supporting queued (`sync: false`) and synchronous (`sync: true`) updates.
+  - `ImportSteamAppsAction` (`steam:import-apps`) uses `SteamApiClient::searchAppsByTitle()` when `$titleFilter` (`--title`) is provided, and `SteamApiClient::getAppList()` otherwise.
+  - `SteamApp::scopeWhereTitle()` uses `LOWER(name) LIKE ? ESCAPE '!'` (escaping `!`, `%`, `_`) so wildcard escaping works identically across SQLite, MySQL, and PostgreSQL.
   - Be mindful of backoff/tries and the `decay_seconds` sleep in `handle()` when simulating rates.
 
 ## Testing Notes
@@ -48,7 +52,7 @@ This document provides guidance for AI coding agents contributing to this reposi
       }
   }
   ```
-- See: `tests/Unit/Actions/ImportSteamAppsActionTest.php` and `tests/Unit/Jobs/FetchSteamAppJobsUniquenessTest.php` for examples.
+- See: `tests/Unit/Actions/ImportSteamAppsActionTest.php`, `tests/Unit/Actions/UpdateSteamAppsByTitleActionTest.php`, and `tests/Unit/Jobs/FetchSteamAppJobsUniquenessTest.php` for examples.
 
 ## Running and Updating Tests
 - Prefer adding targeted tests near existing ones. Mirror established patterns:

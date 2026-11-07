@@ -5,6 +5,7 @@ namespace Artryazanov\LaravelSteamAppsDb\Tests\Unit\Actions;
 use Artryazanov\LaravelSteamAppsDb\Actions\ImportSteamAppsAction;
 use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppDetailsJob;
 use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppNewsJob;
+use Artryazanov\LaravelSteamAppsDb\Jobs\FetchSteamAppWorkshopItemsJob;
 use Artryazanov\LaravelSteamAppsDb\Models\SteamApp;
 use Artryazanov\LaravelSteamAppsDb\Services\SteamApiClient;
 use Artryazanov\LaravelSteamAppsDb\Tests\TestCase;
@@ -204,14 +205,13 @@ class ImportSteamAppsActionTest extends TestCase
         $this->flushCacheAndLocks();
 
         Http::fake([
-            'https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json' => Http::response([
-                'applist' => [
-                    'apps' => [
-                        ['appid' => 1, 'name' => ''],
-                        ['appid' => 70, 'name' => 'Half-Life'],
-                        ['appid' => 220, 'name' => 'Half-Life 2'],
-                        ['appid' => 570, 'name' => 'Dota 2'],
-                    ],
+            'https://store.steampowered.com/api/storesearch/*' => Http::response([
+                'total' => 4,
+                'items' => [
+                    ['id' => 1, 'name' => ''],
+                    ['id' => 70, 'name' => 'Half-Life'],
+                    ['id' => 220, 'name' => 'Half-Life 2'],
+                    ['id' => 570, 'name' => 'Dota 2'],
                 ],
             ], 200),
         ]);
@@ -223,5 +223,43 @@ class ImportSteamAppsActionTest extends TestCase
 
         Bus::assertDispatchedTimes(FetchSteamAppDetailsJob::class, 2);
         $this->assertDatabaseCount('steam_apps', 2);
+    }
+
+    public function test_workshop_scanning_dispatches_workshop_job_when_enabled(): void
+    {
+        $this->flushCacheAndLocks();
+        config([
+            'laravel-steam-apps-db.enable_news_scanning' => false,
+            'laravel-steam-apps-db.enable_workshop_scanning' => true,
+        ]);
+
+        Bus::fake();
+        $this->httpFakeSingleApp(4000, "Garry's Mod");
+
+        $action = new ImportSteamAppsAction(new SteamApiClient);
+        $action->execute();
+
+        Bus::assertDispatched(FetchSteamAppDetailsJob::class);
+        Bus::assertNotDispatched(FetchSteamAppNewsJob::class);
+        Bus::assertDispatched(FetchSteamAppWorkshopItemsJob::class);
+    }
+
+    public function test_handles_job_dispatch_exception_via_error_callback(): void
+    {
+        $this->flushCacheAndLocks();
+        $this->httpFakeSingleApp(42, 'App');
+
+        Bus::shouldReceive('dispatch')->andThrow(new \RuntimeException('Queue unavailable'));
+
+        $errors = [];
+        $action = new ImportSteamAppsAction(new SteamApiClient);
+        $action->execute(
+            errorCallback: function (string $msg) use (&$errors) {
+                $errors[] = $msg;
+            }
+        );
+
+        $this->assertCount(1, $errors);
+        $this->assertStringContainsString('Failed to dispatch jobs for appid 42: Queue unavailable', $errors[0]);
     }
 }

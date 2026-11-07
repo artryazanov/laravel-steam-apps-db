@@ -263,13 +263,12 @@ class ImportSteamAppsCommandTest extends TestCase
     public function test_command_filters_apps_by_title_and_exact_options(): void
     {
         Http::fake([
-            'https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json' => Http::response([
-                'applist' => [
-                    'apps' => [
-                        ['appid' => 70, 'name' => 'Half-Life'],
-                        ['appid' => 220, 'name' => 'Half-Life 2'],
-                        ['appid' => 570, 'name' => 'Dota 2'],
-                    ],
+            'https://store.steampowered.com/api/storesearch/*' => Http::response([
+                'total' => 3,
+                'items' => [
+                    ['id' => 70, 'name' => 'Half-Life'],
+                    ['id' => 220, 'name' => 'Half-Life 2'],
+                    ['id' => 570, 'name' => 'Dota 2'],
                 ],
             ], 200),
         ]);

@@ -29,7 +29,7 @@ class UpdateSteamAppsByTitleAction
      * @param  string  $title  Title or substring to search for
      * @param  bool  $exact  Whether to require an exact (case-insensitive) title match
      * @param  bool  $sync  Whether to execute updates synchronously instead of dispatching queued jobs
-     * @param  bool  $fromApi  Whether to fetch and import matching apps from Steam API GetAppList before updating
+     * @param  bool  $fromApi  Whether to fetch and import matching apps from Steam Store Search API before updating
      * @param  callable(string): void|null  $infoCallback
      * @param  callable(string): void|null  $errorCallback
      * @return Collection<int, SteamApp>
@@ -92,7 +92,7 @@ class UpdateSteamAppsByTitleAction
     }
 
     /**
-     * Fetch app list from Steam API, filter by title, and upsert matching records.
+     * Search apps by title in Steam Store Search API, filter by title, and upsert matching records.
      *
      * @param  callable(string): void  $infoCallback
      * @return Collection<int, SteamApp>
@@ -103,7 +103,7 @@ class UpdateSteamAppsByTitleAction
     {
         $infoCallback('Fetching data from Steam API...');
 
-        $rawApps = $this->steamApiClient->getAppList();
+        $rawApps = $this->steamApiClient->searchAppsByTitle($title);
         $normalizedTarget = mb_strtolower($title);
         $matchedModels = new Collection;
 

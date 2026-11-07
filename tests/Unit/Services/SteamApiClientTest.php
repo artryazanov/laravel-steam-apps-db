@@ -212,4 +212,60 @@ class SteamApiClientTest extends TestCase
         $this->assertSame([], $details);
         Http::assertNothingSent();
     }
+
+    public function test_search_apps_by_title_fetches_and_maps_store_search_results(): void
+    {
+        Http::fake([
+            'https://store.steampowered.com/api/storesearch/*' => Http::response([
+                'total' => 3,
+                'items' => [
+                    ['id' => 3981100, 'name' => 'Leaf it Alone'],
+                    ['invalid_item' => true],
+                    'not_an_array',
+                ],
+            ], 200),
+        ]);
+
+        $client = new SteamApiClient;
+        $this->assertSame([], $client->searchAppsByTitle('   '));
+        Http::assertNothingSent();
+
+        $results = $client->searchAppsByTitle('  Leaf it Alone  ');
+        $this->assertSame([
+            ['appid' => 3981100, 'name' => 'Leaf it Alone'],
+        ], $results);
+
+        Http::assertSent(function ($request) {
+            return str_starts_with($request->url(), 'https://store.steampowered.com/api/storesearch/')
+                && $request['term'] === 'Leaf it Alone'
+                && $request['l'] === 'english'
+                && $request['cc'] === 'US';
+        });
+    }
+
+    public function test_search_apps_by_title_throws_on_http_error(): void
+    {
+        Http::fake([
+            'https://store.steampowered.com/api/storesearch/*' => Http::response([], 500),
+        ]);
+
+        $client = new SteamApiClient;
+
+        $this->expectException(LaravelSteamAppsDbException::class);
+        $this->expectExceptionMessage('Failed to fetch data from Steam API: 500');
+        $client->searchAppsByTitle('Leaf it Alone');
+    }
+
+    public function test_search_apps_by_title_throws_on_invalid_body(): void
+    {
+        Http::fake([
+            'https://store.steampowered.com/api/storesearch/*' => Http::response(['invalid' => true], 200),
+        ]);
+
+        $client = new SteamApiClient;
+
+        $this->expectException(LaravelSteamAppsDbException::class);
+        $this->expectExceptionMessage('Invalid response format from Steam API');
+        $client->searchAppsByTitle('Leaf it Alone');
+    }
 }
